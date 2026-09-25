@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function ToolPicker() {
   const addTool = useCanvasStore((s) => s.addTool);
+  const addCustomTool = useCanvasStore((s) => s.addCustomTool);
   const toggleMemory = useCanvasStore((s) => s.toggleMemory);
   const nodes = useCanvasStore((s) => s.nodes);
 
@@ -32,6 +33,22 @@ export function ToolPicker() {
             </Button>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h2 className="mb-2 text-sm font-medium">Custom tool</h2>
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full justify-start"
+          onClick={addCustomTool}
+        >
+          <AppIcon name="custom" className="mr-2 size-4" />
+          Create custom tool
+        </Button>
+        <p className="text-muted-foreground mt-2 text-xs">
+          Call any HTTP API with your own params, headers, and body.
+        </p>
       </div>
 
       <div>

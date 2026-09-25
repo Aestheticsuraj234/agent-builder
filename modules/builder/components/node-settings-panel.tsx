@@ -1,6 +1,8 @@
 "use client";
 
-import { allowedModels } from "@/modules/builder/lib/models";
+import { CustomToolSettings } from "@/modules/builder/components/custom-tool-settings";
+import { isCustomToolConfig } from "@/modules/builder/lib/custom-tool";
+import { popularGptModels } from "@/modules/builder/lib/models";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,32 +43,58 @@ export function NodeSettingsPanel() {
   }
 
   if (selectedNode.type === "model") {
+    const modelId = (selectedNode.data.modelId as string) ?? "gpt-4o-mini";
+
     return (
       <div className="space-y-4">
         <h3 className="text-sm font-medium">Model</h3>
         <div className="space-y-2">
-          <Label htmlFor="model">Choose model</Label>
-          <select
+          <Label htmlFor="model">Model ID</Label>
+          <Input
             id="model"
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            value={(selectedNode.data.modelId as string) ?? "gpt-4o-mini"}
+            value={modelId}
+            placeholder="gpt-4o-mini"
             onChange={(e) => updateNodeData(selectedNode.id, { modelId: e.target.value })}
-          >
-            {allowedModels.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.label}
-              </option>
+          />
+          <p className="text-muted-foreground text-xs">
+            Type any OpenAI GPT model ID.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label>Popular picks</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {popularGptModels.map((model) => (
+              <Button
+                key={model}
+                type="button"
+                variant={modelId === model ? "default" : "outline"}
+                size="xs"
+                onClick={() => updateNodeData(selectedNode.id, { modelId: model })}
+              >
+                {model}
+              </Button>
             ))}
-          </select>
+          </div>
         </div>
       </div>
     );
   }
 
   if (selectedNode.type === "tool") {
+    const config = selectedNode.data.config;
+
+    if (isCustomToolConfig(config)) {
+      return (
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium">Custom tool</h3>
+          <CustomToolSettings nodeId={selectedNode.id} config={config} />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-medium">Tool</h3>
+        <h3 className="text-sm font-medium">Built-in tool</h3>
         <p className="text-sm">{(selectedNode.data.label as string) ?? ""}</p>
         <p className="text-muted-foreground text-xs">{(selectedNode.data.toolId as string) ?? ""}</p>
         <Button variant="outline" size="sm" onClick={removeSelectedNode}>

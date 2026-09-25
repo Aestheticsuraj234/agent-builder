@@ -30,7 +30,7 @@ export function NewAgentPageContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AppIcon name="blank" className="size-6" />
+              <AppIcon name="blank" badge />
               Blank Agent
             </CardTitle>
             <CardDescription>Start with empty instructions and add tools later.</CardDescription>

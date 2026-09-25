@@ -30,7 +30,7 @@ export function AgentCard({ agent }: AgentCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <AppIcon name={agent.icon} className="size-6" />
+          <AppIcon name={agent.icon} badge />
           {agent.name}
         </CardTitle>
         <CardDescription>

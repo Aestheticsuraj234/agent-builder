@@ -20,7 +20,7 @@ export function TemplateCard({ template }: { template: AgentTemplate }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <AppIcon name={template.icon} className="size-6" />
+          <AppIcon name={template.icon} badge />
           {template.name}
         </CardTitle>
         <CardDescription>{template.description}</CardDescription>

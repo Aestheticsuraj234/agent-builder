@@ -1,6 +1,7 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { AgentDefinition } from "@/modules/agents/lib/definition";
 import { defaultDefinition } from "@/modules/agents/lib/definition";
+import { isCustomToolConfig } from "./custom-tool";
 import { getToolLabel } from "./tools-catalog";
 
 type SavedCanvas = {
@@ -35,11 +36,17 @@ export function definitionToCanvas(
 
   definition.tools.forEach((tool, i) => {
     const id = `tool-${tool.toolId}`;
+    const isCustom = isCustomToolConfig(tool.config);
     nodes.push({
       id,
       type: "tool",
       position: { x: 40, y: 120 + i * 90 },
-      data: { label: getToolLabel(tool.toolId), toolId: tool.toolId },
+      data: {
+        label: getToolLabel(tool.toolId, tool.config),
+        toolId: tool.toolId,
+        isCustom,
+        config: tool.config ?? {},
+      },
     });
     edges.push({ id: `e-${id}-agent`, source: id, target: "agent" });
   });
@@ -68,7 +75,10 @@ export function canvasToDefinition(nodes: Node[], edges: Edge[]): AgentDefinitio
 
   const tools = nodes
     .filter((n) => n.type === "tool" && isConnected(n.id))
-    .map((n) => ({ toolId: n.data.toolId as string, config: {} }));
+    .map((n) => ({
+      toolId: n.data.toolId as string,
+      config: n.data.isCustom ? (n.data.config as Record<string, unknown>) : {},
+    }));
 
   return {
     schemaVersion: 1,

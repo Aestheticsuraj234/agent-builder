@@ -13,6 +13,7 @@ import {
 import { create } from "zustand";
 import type { AgentDefinition } from "@/modules/agents/lib/definition";
 import { canvasToDefinition, definitionToCanvas } from "@/modules/builder/lib/serialize";
+import { defaultCustomToolConfig } from "@/modules/builder/lib/custom-tool";
 import { getToolLabel } from "@/modules/builder/lib/tools-catalog";
 
 type CanvasStore = {
@@ -26,6 +27,7 @@ type CanvasStore = {
   onConnect: (connection: Connection) => void;
   selectNode: (nodeId: string | null) => void;
   addTool: (toolId: string) => void;
+  addCustomTool: () => void;
   toggleMemory: () => void;
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   removeSelectedNode: () => void;
@@ -98,10 +100,33 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           id: nodeId,
           type: "tool",
           position: { x: 40, y: 120 + toolCount * 90 },
-          data: { label: getToolLabel(toolId), toolId },
+          data: { label: getToolLabel(toolId), toolId, isCustom: false, config: {} },
         },
       ],
       edges: [...edges, { id: `e-${nodeId}-agent`, source: nodeId, target: "agent" }],
+      isDirty: true,
+    });
+  },
+
+  addCustomTool() {
+    const { nodes, edges } = get();
+    const toolId = `custom-${Date.now()}`;
+    const nodeId = `tool-${toolId}`;
+    const config = defaultCustomToolConfig();
+    const toolCount = nodes.filter((n) => n.type === "tool").length;
+
+    set({
+      nodes: [
+        ...nodes,
+        {
+          id: nodeId,
+          type: "tool",
+          position: { x: 40, y: 120 + toolCount * 90 },
+          data: { label: config.name, toolId, isCustom: true, config },
+        },
+      ],
+      edges: [...edges, { id: `e-${nodeId}-agent`, source: nodeId, target: "agent" }],
+      selectedNodeId: nodeId,
       isDirty: true,
     });
   },

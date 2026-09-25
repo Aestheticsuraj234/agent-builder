@@ -33,6 +33,49 @@ export const iconMap = {
   github_get_pr: GitPullRequestIcon,
   github_get_diff: FileDiffIcon,
   memory: AiBrain01Icon,
+  custom: Add01Icon,
+};
+
+export const iconColors: Record<keyof typeof iconMap, string> = {
+  bot: "text-cyan-400",
+  model: "text-violet-400",
+  weather: "text-sky-400",
+  "web-research": "text-yellow-400",
+  travel: "text-orange-400",
+  writing: "text-rose-400",
+  coding: "text-emerald-400",
+  "pr-review": "text-fuchsia-400",
+  blank: "text-slate-400",
+  calculator: "text-amber-400",
+  web_search: "text-yellow-400",
+  read_webpage: "text-blue-400",
+  github_read_file: "text-orange-400",
+  github_search_code: "text-emerald-400",
+  github_get_pr: "text-violet-400",
+  github_get_diff: "text-rose-400",
+  memory: "text-cyan-400",
+  custom: "text-lime-400",
+};
+
+export const iconBgColors: Record<keyof typeof iconMap, string> = {
+  bot: "bg-cyan-500/15",
+  model: "bg-violet-500/15",
+  weather: "bg-sky-500/15",
+  "web-research": "bg-yellow-500/15",
+  travel: "bg-orange-500/15",
+  writing: "bg-rose-500/15",
+  coding: "bg-emerald-500/15",
+  "pr-review": "bg-fuchsia-500/15",
+  blank: "bg-slate-500/15",
+  calculator: "bg-amber-500/15",
+  web_search: "bg-yellow-500/15",
+  read_webpage: "bg-blue-500/15",
+  github_read_file: "bg-orange-500/15",
+  github_search_code: "bg-emerald-500/15",
+  github_get_pr: "bg-violet-500/15",
+  github_get_diff: "bg-rose-500/15",
+  memory: "bg-cyan-500/15",
+  custom: "bg-lime-500/15",
 };
 
 export type IconName = keyof typeof iconMap;
