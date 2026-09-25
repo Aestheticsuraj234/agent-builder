@@ -2,6 +2,7 @@
 
 import { CustomToolSettings } from "@/modules/builder/components/custom-tool-settings";
 import { GithubSettings } from "@/modules/builder/components/github-settings";
+import { McpPicker } from "@/modules/builder/components/mcp-picker";
 import type { GithubConfig } from "@/modules/agents/lib/definition";
 import { isCustomToolConfig } from "@/modules/builder/lib/custom-tool";
 import { popularGptModels } from "@/modules/builder/lib/models";
@@ -171,6 +172,11 @@ export function NodeSettingsPanel() {
           <Button variant="outline" size="sm" onClick={toggleMemory}>
             {memoryEnabled ? "Disable memory" : "Enable memory"}
           </Button>
+        </div>
+
+        <div className="space-y-2">
+          <Label>MCP servers</Label>
+          <McpPicker />
         </div>
 
         <GithubSettings nodeId={selectedNode.id} github={github} />

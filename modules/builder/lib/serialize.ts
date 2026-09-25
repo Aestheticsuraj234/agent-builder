@@ -60,6 +60,7 @@ function builderNodeToFlowNode(
         modelId: config.modelId,
         tools: config.tools,
         github: config.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+        mcpConnectionIds: config.mcpConnectionIds ?? [],
         memoryEnabled: builder.memory.enabled,
       },
     };
@@ -92,6 +93,7 @@ export function definitionToCanvas(
             modelId: agentConfig.modelId,
             tools: agentConfig.tools,
             github: agentConfig.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+            mcpConnectionIds: agentConfig.mcpConnectionIds ?? [],
             memoryEnabled: definition.memory.enabled,
           },
         };
@@ -150,6 +152,10 @@ export function canvasToBuilderDefinition(
       defaultPrNumber: string;
     }) ??
       defaultConfig?.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+    mcpConnectionIds:
+      (agentFlowNode?.data.mcpConnectionIds as string[]) ??
+      defaultConfig?.mcpConnectionIds ??
+      [],
   };
 
   const builderNodes: BuilderDefinition["nodes"] = [

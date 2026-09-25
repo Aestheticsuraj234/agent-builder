@@ -22,10 +22,26 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
-  agents        Agent[]
+  agents          Agent[]
+  mcpConnections  McpConnection[]
 
   @@unique([email])
   @@map("user")
+}
+
+model McpConnection {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  url       String
+  headers   Json     @default("{}")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mcp_connection")
 }
 
 model Agent {

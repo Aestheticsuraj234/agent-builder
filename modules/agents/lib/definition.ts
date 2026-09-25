@@ -12,6 +12,7 @@ export type AgentDefinition = {
   memory: { enabled: boolean };
   limits: { maxToolCalls: number; timeoutMs: number };
   github?: GithubConfig;
+  mcpConnectionIds?: string[];
 };
 
 export function defaultDefinition(): AgentDefinition {

@@ -30,6 +30,12 @@ export default async function DashboardLayout({
           >
             New Agent
           </Link>
+          <Link
+            href="/agents/integrations"
+            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Integrations
+          </Link>
         </nav>
         <div className="mt-auto space-y-3 border-t border-border p-3">
           <UserButton />

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppIcon } from "@/components/app-icon";
+import { McpPicker } from "@/modules/builder/components/mcp-picker";
 import { toolsCatalog } from "@/modules/builder/lib/tools-catalog";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,11 @@ export function ToolPicker() {
             </Button>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h2 className="mb-2 text-sm font-medium">MCP integrations</h2>
+        <McpPicker />
       </div>
 
       <div>

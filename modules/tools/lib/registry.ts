@@ -7,6 +7,7 @@ import { createGithubTools } from "./github";
 import { getGithubToken } from "./github/token";
 import { readWebpageTool } from "./read-webpage";
 import { weatherTool } from "./weather";
+import { getMcpTools } from "@/modules/integrations/lib/mcp-client";
 import { webSearchTool } from "./web-search";
 
 const builtInTools: Record<string, StructuredTool> = {
@@ -54,6 +55,11 @@ export async function getToolsForAgent(definition: AgentDefinition, userId: stri
     if (builtIn) {
       tools.push(builtIn);
     }
+  }
+
+  if (definition.mcpConnectionIds?.length) {
+    const mcpTools = await getMcpTools(userId, definition.mcpConnectionIds);
+    tools.push(...mcpTools);
   }
 
   return tools;

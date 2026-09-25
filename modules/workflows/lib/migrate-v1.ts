@@ -60,6 +60,7 @@ export function builderToAgentDefinition(builder: BuilderDefinition): AgentDefin
       timeoutMs: builder.limits.timeoutMs,
     },
     github: config.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+    mcpConnectionIds: config.mcpConnectionIds ?? [],
   };
 }
 
@@ -96,6 +97,7 @@ export function migrateV1CanvasToV2(
     github:
       (agentNode?.data.github as AgentDefinition["github"]) ??
       defaultAgent.config.github,
+    mcpConnectionIds: defaultAgent.config.mcpConnectionIds ?? [],
   };
 
   base.memory.enabled = !!memoryNode && isConnected("memory");

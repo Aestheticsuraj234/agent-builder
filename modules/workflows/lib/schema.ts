@@ -21,6 +21,7 @@ export const agentNodeConfigSchema = z.object({
   modelId: z.string(),
   tools: z.array(toolConfigSchema).default([]),
   github: githubConfigSchema.optional(),
+  mcpConnectionIds: z.array(z.string()).default([]),
 });
 
 export type AgentNodeConfig = z.infer<typeof agentNodeConfigSchema>;
@@ -78,6 +79,7 @@ export function defaultBuilderDefinition(
     modelId: partial?.modelId ?? "gpt-4o-mini",
     tools: partial?.tools ?? [],
     github: partial?.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+    mcpConnectionIds: partial?.mcpConnectionIds ?? [],
   };
 
   return {
