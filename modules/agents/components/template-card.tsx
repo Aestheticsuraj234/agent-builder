@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/app-icon";
 import { useCreateFromTemplate } from "@/modules/agents/hooks/use-agents";
 import type { AgentTemplate } from "@/modules/agents/lib/templates";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export function TemplateCard({ template }: { template: AgentTemplate }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-2xl">{template.icon}</span>
+          <AppIcon name={template.icon} className="size-6" />
           {template.name}
         </CardTitle>
         <CardDescription>{template.description}</CardDescription>

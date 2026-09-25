@@ -8,6 +8,7 @@ import {
   deleteAgent,
   fetchAgent,
   listAgents,
+  saveAgent,
   updateAgent,
 } from "@/modules/agents/actions";
 import { agentKeys } from "@/modules/agents/lib/query-keys";
@@ -69,6 +70,23 @@ export function useUpdateAgent(agentId: string) {
   return useMutation({
     mutationFn: (data: { name?: string; description?: string; instructions?: string }) =>
       updateAgent(agentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: agentKeys.detail(agentId) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.list() });
+    },
+  });
+}
+
+export function useSaveAgent(agentId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string;
+      description: string;
+      draftDefinition: any;
+      canvas: any;
+    }) => saveAgent(agentId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: agentKeys.detail(agentId) });
       queryClient.invalidateQueries({ queryKey: agentKeys.list() });

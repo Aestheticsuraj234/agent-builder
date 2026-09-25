@@ -29,6 +29,7 @@ export async function createBlankAgent() {
     data: {
       userId: user.id,
       name: "Untitled Agent",
+      icon: "bot",
       draftDefinition: defaultDefinition() as any,
     },
   });
@@ -92,6 +93,36 @@ export async function updateAgent(
       draftDefinition: (data.instructions
         ? { ...draftDefinition, instructions: data.instructions }
         : draftDefinition) as any,
+    },
+  });
+}
+
+export async function saveAgent(
+  agentId: string,
+  data: {
+    name: string;
+    description: string;
+    draftDefinition: any;
+    canvas: any;
+  }
+) {
+  const user = await requireAuth();
+
+  const agent = await prisma.agent.findFirst({
+    where: { id: agentId, userId: user.id },
+  });
+
+  if (!agent) {
+    throw new Error("Agent not found");
+  }
+
+  return prisma.agent.update({
+    where: { id: agentId },
+    data: {
+      name: data.name,
+      description: data.description,
+      draftDefinition: data.draftDefinition,
+      canvas: data.canvas,
     },
   });
 }

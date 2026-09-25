@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/app-icon";
 import { TemplateCard } from "@/modules/agents/components/template-card";
 import { useCreateBlankAgent } from "@/modules/agents/hooks/use-agents";
 import { templates } from "@/modules/agents/lib/templates";
@@ -29,7 +30,7 @@ export function NewAgentPageContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <span className="text-2xl">📄</span>
+              <AppIcon name="blank" className="size-6" />
               Blank Agent
             </CardTitle>
             <CardDescription>Start with empty instructions and add tools later.</CardDescription>

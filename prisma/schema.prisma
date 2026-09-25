@@ -34,7 +34,7 @@ model Agent {
   templateId      String?
   name            String
   description     String   @default("")
-  icon            String   @default("🤖")
+  icon            String   @default("bot")
   welcomeMessage  String   @default("")
   starterPrompts  Json     @default("[]")
   draftDefinition Json

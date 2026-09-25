@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AppIcon } from "@/components/app-icon";
 import { useDeleteAgent } from "@/modules/agents/hooks/use-agents";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,7 @@ export function AgentCard({ agent }: AgentCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-2xl">{agent.icon}</span>
+          <AppIcon name={agent.icon} className="size-6" />
           {agent.name}
         </CardTitle>
         <CardDescription>

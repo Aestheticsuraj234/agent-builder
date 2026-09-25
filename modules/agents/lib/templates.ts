@@ -16,7 +16,7 @@ export const templates: AgentTemplate[] = [
     id: "weather",
     name: "Weather Assistant",
     description: "Get forecasts for any city.",
-    icon: "🌤️",
+    icon: "weather",
     welcomeMessage: "Ask me about the weather anywhere.",
     starterPrompts: ["What's the forecast in Tokyo?", "Will it rain in London this week?"],
     definition: {
@@ -30,7 +30,7 @@ export const templates: AgentTemplate[] = [
     id: "web-research",
     name: "Web Research Assistant",
     description: "Search the web and summarize what you find.",
-    icon: "🔍",
+    icon: "web-research",
     welcomeMessage: "I can search the web and summarize results for you.",
     starterPrompts: ["Summarize recent news on AI agents", "What are people saying about Next.js 16?"],
     definition: {
@@ -47,7 +47,7 @@ export const templates: AgentTemplate[] = [
     id: "travel",
     name: "Travel Assistant",
     description: "Plan trips with weather, search, and quick math.",
-    icon: "✈️",
+    icon: "travel",
     welcomeMessage: "Let's plan your next trip.",
     starterPrompts: ["Plan a weekend in Paris", "What's the weather like in Bali in December?"],
     definition: {
@@ -65,7 +65,7 @@ export const templates: AgentTemplate[] = [
     id: "writing",
     name: "Writing Assistant",
     description: "Help with drafts, edits, and ideas.",
-    icon: "✍️",
+    icon: "writing",
     welcomeMessage: "Tell me what you'd like to write.",
     starterPrompts: ["Help me write a blog intro about AI", "Improve this paragraph for clarity"],
     definition: {
@@ -79,7 +79,7 @@ export const templates: AgentTemplate[] = [
     id: "coding",
     name: "Coding Helper",
     description: "Explore repos and explain code.",
-    icon: "💻",
+    icon: "coding",
     welcomeMessage: "Ask me about code in your GitHub repos.",
     starterPrompts: ["Explain how auth works in my repo", "Find where we handle API routes"],
     definition: {
@@ -97,7 +97,7 @@ export const templates: AgentTemplate[] = [
     id: "pr-review",
     name: "PR Review Assistant",
     description: "Review pull requests for bugs and style.",
-    icon: "🔎",
+    icon: "pr-review",
     welcomeMessage: "Paste a PR link or ask me to review changes.",
     starterPrompts: ["Review this PR for bugs", "Summarize the changes in PR #42"],
     definition: {
