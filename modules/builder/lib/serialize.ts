@@ -1,6 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { AgentDefinition } from "@/modules/agents/lib/definition";
-import type { BuilderDefinition } from "@/modules/workflows/lib/schema";
+import type { AgentNodeConfig, BuilderDefinition } from "@/modules/workflows/lib/schema";
 import { defaultBuilderDefinition } from "@/modules/workflows/lib/schema";
 import {
   builderToAgentDefinition,
@@ -16,20 +16,25 @@ type SavedCanvas = {
   edges: Edge[];
 };
 
-const DEFAULT_POSITIONS = {
-  start: { x: 280, y: 40 },
-  agent: { x: 280, y: 180 },
-  end: { x: 280, y: 340 },
-};
+function flowDataFromAgentConfig(config: AgentNodeConfig, memoryEnabled: boolean) {
+  return {
+    label: config.label,
+    instructions: config.instructions,
+    modelId: config.modelId,
+    tools: config.tools,
+    github: config.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+    mcpConnectionIds: config.mcpConnectionIds ?? [],
+    skillIds: config.skillIds ?? [],
+    inputBinding: config.inputBinding,
+    memoryEnabled,
+  };
+}
 
-function builderNodeToFlowNode(
-  builder: BuilderDefinition,
-  nodeId: string,
-  position: { x: number; y: number }
+function flowNodeFromBuilderNode(
+  node: BuilderDefinition["nodes"][number],
+  position: { x: number; y: number },
+  memoryEnabled: boolean
 ): Node | null {
-  const node = builder.nodes.find((n) => n.id === nodeId);
-  if (!node) return null;
-
   if (node.type === "start") {
     return {
       id: node.id,
@@ -49,25 +54,32 @@ function builderNodeToFlowNode(
   }
 
   if (node.type === "agent") {
-    const config = node.config;
     return {
       id: node.id,
       type: "agent",
       position,
-      data: {
-        label: config.label,
-        instructions: config.instructions,
-        modelId: config.modelId,
-        tools: config.tools,
-        github: config.github ?? { owner: "", repo: "", defaultPrNumber: "" },
-        mcpConnectionIds: config.mcpConnectionIds ?? [],
-        skillIds: config.skillIds ?? [],
-        memoryEnabled: builder.memory.enabled,
-      },
+      data: flowDataFromAgentConfig(node.config, memoryEnabled),
     };
   }
 
   return null;
+}
+
+function agentConfigFromFlowData(data: Record<string, unknown>): AgentNodeConfig {
+  return {
+    label: (data.label as string) ?? "Agent",
+    instructions: (data.instructions as string) ?? "You are a helpful assistant.",
+    modelId: (data.modelId as string) ?? "gpt-4o-mini",
+    tools: (data.tools as AgentNodeConfig["tools"]) ?? [],
+    github: (data.github as AgentNodeConfig["github"]) ?? {
+      owner: "",
+      repo: "",
+      defaultPrNumber: "",
+    },
+    mcpConnectionIds: (data.mcpConnectionIds as string[]) ?? [],
+    skillIds: (data.skillIds as string[]) ?? [],
+    inputBinding: data.inputBinding as AgentNodeConfig["inputBinding"],
+  };
 }
 
 export function definitionToCanvas(
@@ -80,25 +92,20 @@ export function definitionToCanvas(
     savedCanvas.nodes.some((n) => n.type === "start");
 
   if (useSaved) {
-    const agentNode = definition.nodes.find((n) => n.type === "agent");
-    const agentConfig =
-      agentNode?.type === "agent" ? agentNode.config : null;
+    const agentConfigs = new Map<string, AgentNodeConfig>();
+    for (const n of definition.nodes) {
+      if (n.type === "agent") agentConfigs.set(n.id, n.config);
+    }
 
     const nodes = savedCanvas!.nodes.map((n) => {
-      if (n.type === "agent" && agentConfig) {
-        return {
-          ...n,
-          data: {
-            label: agentConfig.label,
-            instructions: agentConfig.instructions,
-            modelId: agentConfig.modelId,
-            tools: agentConfig.tools,
-            github: agentConfig.github ?? { owner: "", repo: "", defaultPrNumber: "" },
-            mcpConnectionIds: agentConfig.mcpConnectionIds ?? [],
-            skillIds: agentConfig.skillIds ?? [],
-            memoryEnabled: definition.memory.enabled,
-          },
-        };
+      if (n.type === "agent") {
+        const config = agentConfigs.get(n.id);
+        if (config) {
+          return {
+            ...n,
+            data: flowDataFromAgentConfig(config, definition.memory.enabled),
+          };
+        }
       }
       return n;
     });
@@ -106,10 +113,15 @@ export function definitionToCanvas(
     return { nodes, edges: savedCanvas!.edges ?? [] };
   }
 
+  let y = 40;
   const nodes: Node[] = [];
-  for (const [id, pos] of Object.entries(DEFAULT_POSITIONS)) {
-    const flowNode = builderNodeToFlowNode(definition, id, pos);
-    if (flowNode) nodes.push(flowNode);
+
+  for (const node of definition.nodes) {
+    const flowNode = flowNodeFromBuilderNode(node, { x: 280, y }, definition.memory.enabled);
+    if (flowNode) {
+      nodes.push(flowNode);
+      y += 140;
+    }
   }
 
   const edges: Edge[] = definition.edges.map((e) => ({
@@ -130,51 +142,33 @@ export function canvasToBuilderDefinition(
   const base = defaultBuilderDefinition();
   const memoryEnabled = opts?.memoryEnabled;
   const limits = opts?.limits ?? base.limits;
-  const defaultAgent = base.nodes.find((n) => n.type === "agent")!;
-  const defaultConfig = defaultAgent.type === "agent" ? defaultAgent.config : null;
 
-  const startNode = nodes.find((n) => n.type === "start");
-  const agentFlowNode = nodes.find((n) => n.type === "agent");
-  const endNode = nodes.find((n) => n.type === "end");
-
-  const agentConfig = {
-    label: (agentFlowNode?.data.label as string) ?? defaultConfig?.label ?? "Main agent",
-    instructions:
-      (agentFlowNode?.data.instructions as string) ??
-      defaultConfig?.instructions ??
-      "You are a helpful assistant.",
-    modelId:
-      (agentFlowNode?.data.modelId as string) ?? defaultConfig?.modelId ?? "gpt-4o-mini",
-    tools: (agentFlowNode?.data.tools as { toolId: string; config: Record<string, unknown> }[]) ??
-      defaultConfig?.tools ??
-      [],
-    github: (agentFlowNode?.data.github as {
-      owner: string;
-      repo: string;
-      defaultPrNumber: string;
-    }) ??
-      defaultConfig?.github ?? { owner: "", repo: "", defaultPrNumber: "" },
-    mcpConnectionIds:
-      (agentFlowNode?.data.mcpConnectionIds as string[]) ??
-      defaultConfig?.mcpConnectionIds ??
-      [],
-    skillIds:
-      (agentFlowNode?.data.skillIds as string[]) ?? defaultConfig?.skillIds ?? [],
-  };
-
-  const builderNodes: BuilderDefinition["nodes"] = [
-    {
-      id: startNode?.id ?? "start",
-      type: "start",
-      label: (startNode?.data.label as string) ?? "Start",
-    },
-    { id: agentFlowNode?.id ?? "agent", type: "agent", config: agentConfig },
-    {
-      id: endNode?.id ?? "end",
-      type: "end",
-      label: (endNode?.data.label as string) ?? "End",
-    },
-  ];
+  const builderNodes: BuilderDefinition["nodes"] = nodes
+    .map((n) => {
+      if (n.type === "start") {
+        return {
+          id: n.id,
+          type: "start" as const,
+          label: (n.data.label as string) ?? "Start",
+        };
+      }
+      if (n.type === "end") {
+        return {
+          id: n.id,
+          type: "end" as const,
+          label: (n.data.label as string) ?? "End",
+        };
+      }
+      if (n.type === "agent") {
+        return {
+          id: n.id,
+          type: "agent" as const,
+          config: agentConfigFromFlowData(n.data as Record<string, unknown>),
+        };
+      }
+      return null;
+    })
+    .filter(Boolean) as BuilderDefinition["nodes"];
 
   let builderEdges = edges
     .filter((e) => {
@@ -190,12 +184,14 @@ export function canvasToBuilderDefinition(
     ];
   }
 
-  const memoryFromNode = agentFlowNode?.data.memoryEnabled as boolean | undefined;
+  const startNode = nodes.find((n) => n.type === "start");
+  const anyAgent = nodes.find((n) => n.type === "agent");
+  const memoryFromNode = anyAgent?.data.memoryEnabled as boolean | undefined;
 
   return {
     schemaVersion: 2,
     entryNodeId: startNode?.id ?? "start",
-    nodes: builderNodes,
+    nodes: builderNodes.length ? builderNodes : base.nodes,
     edges: builderEdges,
     memory: { enabled: memoryEnabled ?? memoryFromNode ?? base.memory.enabled },
     limits,
@@ -232,4 +228,20 @@ export function getCanvasJson(nodes: Node[], edges: Edge[]) {
 
 export function getAgentToolBadges(tools: { toolId: string; config?: unknown }[]) {
   return tools.map((t) => getToolLabel(t.toolId, t.config));
+}
+
+export function getUpstreamAgentNodes(nodes: Node[], edges: Edge[], currentId: string) {
+  const result: Node[] = [];
+  let current = edges.find((e) => e.target === currentId)?.source;
+
+  while (current) {
+    const node = nodes.find((n) => n.id === current);
+    if (!node) break;
+    if (node.type === "agent" && node.id !== currentId) {
+      result.unshift(node);
+    }
+    current = edges.find((e) => e.target === current)?.source;
+  }
+
+  return result;
 }

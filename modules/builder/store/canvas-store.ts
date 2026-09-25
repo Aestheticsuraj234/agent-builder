@@ -46,10 +46,15 @@ type CanvasStore = {
   getDefinition: () => BuilderDefinition;
   getAgentDefinition: () => AgentDefinition;
   getCanvas: () => { nodes: Node[]; edges: Edge[] };
+  addAgentNode: () => void;
   markClean: () => void;
 };
 
-function getAgentNode(nodes: Node[]) {
+function getActiveAgentNode(nodes: Node[], selectedNodeId: string | null) {
+  if (selectedNodeId) {
+    const selected = nodes.find((n) => n.id === selectedNodeId && n.type === "agent");
+    if (selected) return selected;
+  }
   return nodes.find((n) => n.type === "agent");
 }
 
@@ -65,6 +70,7 @@ function canConnect(connection: Connection, nodes: Node[]) {
   if (!source || !target) return false;
 
   if (source.type === "start" && target.type === "agent") return true;
+  if (source.type === "agent" && target.type === "agent") return true;
   if (source.type === "agent" && target.type === "end") return true;
 
   return false;
@@ -82,12 +88,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   init(draftDefinition, canvas) {
     const { nodes, edges } = loadCanvasFromDraft(draftDefinition, canvas);
     const builder = canvasToBuilderDefinition(nodes, edges);
-    const agentNode = getAgentNode(nodes);
-
     set({
-      nodes: agentNode
-        ? updateAgentData(nodes, agentNode.id, { memoryEnabled: builder.memory.enabled })
-        : nodes,
+      nodes: nodes.map((n) =>
+        n.type === "agent"
+          ? { ...n, data: { ...n.data, memoryEnabled: builder.memory.enabled } }
+          : n
+      ),
       edges,
       selectedNodeId: null,
       selectedToolIndex: null,
@@ -135,11 +141,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   getAgentNodeId() {
-    return getAgentNode(get().nodes)?.id ?? "agent";
+    return getActiveAgentNode(get().nodes, get().selectedNodeId)?.id ?? "agent";
   },
 
   addTool(toolId) {
-    const agentNode = getAgentNode(get().nodes);
+    const agentNode = getActiveAgentNode(get().nodes, get().selectedNodeId);
     if (!agentNode) return;
 
     const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
@@ -153,7 +159,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   addCustomTool() {
-    const agentNode = getAgentNode(get().nodes);
+    const agentNode = getActiveAgentNode(get().nodes, get().selectedNodeId);
     if (!agentNode) return;
 
     const toolId = `custom-${Date.now()}`;
@@ -170,7 +176,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   removeTool(index) {
-    const agentNode = getAgentNode(get().nodes);
+    const agentNode = getActiveAgentNode(get().nodes, get().selectedNodeId);
     if (!agentNode) return;
 
     const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
@@ -184,7 +190,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   updateTool(index, config) {
-    const agentNode = getAgentNode(get().nodes);
+    const agentNode = getActiveAgentNode(get().nodes, get().selectedNodeId);
     if (!agentNode) return;
 
     const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
@@ -200,13 +206,51 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   toggleMemory() {
     const next = !get().memoryEnabled;
-    const agentNode = getAgentNode(get().nodes);
 
     set({
       memoryEnabled: next,
-      nodes: agentNode
-        ? updateAgentData(get().nodes, agentNode.id, { memoryEnabled: next })
-        : get().nodes,
+      nodes: get().nodes.map((n) =>
+        n.type === "agent" ? { ...n, data: { ...n.data, memoryEnabled: next } } : n
+      ),
+      isDirty: true,
+    });
+  },
+
+  addAgentNode() {
+    const { nodes, edges } = get();
+    const endNode = nodes.find((n) => n.type === "end");
+    if (!endNode) return;
+
+    const edgeToEnd = edges.find((e) => e.target === endNode.id);
+    const prevId = edgeToEnd?.source;
+    if (!prevId) return;
+
+    const newId = `agent-${Date.now()}`;
+    const agentCount = nodes.filter((n) => n.type === "agent").length;
+
+    set({
+      nodes: [
+        ...nodes,
+        {
+          id: newId,
+          type: "agent",
+          position: { x: 280, y: 180 + agentCount * 140 },
+          data: {
+            label: `Agent ${agentCount + 1}`,
+            instructions: "You are a helpful assistant.",
+            modelId: "gpt-4o-mini",
+            tools: [],
+            github: { owner: "", repo: "", defaultPrNumber: "" },
+            mcpConnectionIds: [],
+            skillIds: [],
+          },
+        },
+      ],
+      edges: [
+        ...edges.filter((e) => !(e.source === prevId && e.target === endNode.id)),
+        { id: `e-${prevId}-${newId}`, source: prevId, target: newId, animated: true },
+        { id: `e-${newId}-${endNode.id}`, source: newId, target: endNode.id, animated: true },
+      ],
       isDirty: true,
     });
   },

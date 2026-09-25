@@ -4,6 +4,7 @@ import prisma from "@/lib/db";
 import { requireAuth } from "@/modules/auth/actions";
 import { defaultDefinition } from "@/modules/agents/lib/definition";
 import { getTemplate } from "@/modules/agents/lib/templates";
+import { getWorkflowTemplate } from "@/modules/agents/lib/workflow-templates";
 
 export async function listAgents() {
   const user = await requireAuth();
@@ -31,6 +32,28 @@ export async function createBlankAgent() {
       name: "Untitled Agent",
       icon: "bot",
       draftDefinition: defaultDefinition() as any,
+    },
+  });
+}
+
+export async function createFromWorkflowTemplate(templateId: string) {
+  const user = await requireAuth();
+  const template = getWorkflowTemplate(templateId);
+
+  if (!template) {
+    throw new Error("Template not found");
+  }
+
+  return prisma.agent.create({
+    data: {
+      userId: user.id,
+      templateId: template.id,
+      name: template.name,
+      description: template.description,
+      icon: template.icon,
+      welcomeMessage: template.welcomeMessage,
+      starterPrompts: template.starterPrompts as any,
+      draftDefinition: template.definition as any,
     },
   });
 }

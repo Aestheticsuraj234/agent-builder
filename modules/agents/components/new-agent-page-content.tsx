@@ -3,7 +3,9 @@
 import { AppIcon } from "@/components/app-icon";
 import { TemplateCard } from "@/modules/agents/components/template-card";
 import { useCreateBlankAgent } from "@/modules/agents/hooks/use-agents";
+import { WorkflowTemplateCard } from "@/modules/agents/components/workflow-template-card";
 import { templates } from "@/modules/agents/lib/templates";
+import { workflowTemplates } from "@/modules/agents/lib/workflow-templates";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,6 +46,10 @@ export function NewAgentPageContent() {
             </Button>
           </CardFooter>
         </Card>
+
+        {workflowTemplates.map((template) => (
+          <WorkflowTemplateCard key={template.id} template={template} />
+        ))}
 
         {templates.map((template) => (
           <TemplateCard key={template.id} template={template} />

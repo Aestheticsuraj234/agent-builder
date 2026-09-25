@@ -10,7 +10,10 @@ export function SkillPicker() {
   const nodes = useCanvasStore((s) => s.nodes);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
 
-  const agentNode = nodes.find((n) => n.type === "agent");
+  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const agentNode =
+    nodes.find((n) => n.id === selectedNodeId && n.type === "agent") ??
+    nodes.find((n) => n.type === "agent");
   const attached = (agentNode?.data.skillIds as string[]) ?? [];
 
   function toggle(id: string) {

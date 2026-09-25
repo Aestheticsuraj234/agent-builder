@@ -23,6 +23,12 @@ export const agentNodeConfigSchema = z.object({
   github: githubConfigSchema.optional(),
   mcpConnectionIds: z.array(z.string()).default([]),
   skillIds: z.array(z.string()).default([]),
+  inputBinding: z
+    .object({
+      kind: z.literal("nodeOutput"),
+      nodeId: z.string(),
+    })
+    .optional(),
 });
 
 export type AgentNodeConfig = z.infer<typeof agentNodeConfigSchema>;

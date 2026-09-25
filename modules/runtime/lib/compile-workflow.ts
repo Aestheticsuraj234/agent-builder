@@ -1,6 +1,6 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import type { BuilderDefinition } from "@/modules/workflows/lib/schema";
-import { builderToAgentDefinition } from "@/modules/workflows/lib/migrate-v1";
+import { agentConfigToDefinition } from "@/modules/workflows/lib/migrate-v1";
 import { runAgentNode } from "./run-agent-node";
 import type { RunEvent } from "./run-agent";
 import { validateGraph } from "./validate-graph";
@@ -9,6 +9,7 @@ const WorkflowState = Annotation.Root({
   userMessage: Annotation<string>,
   history: Annotation<{ role: string; content: string }[]>,
   output: Annotation<string>,
+  outputs: Annotation<Record<string, string>>,
   stepCount: Annotation<number>,
 });
 
@@ -54,11 +55,14 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
           stepCount: (state.stepCount ?? 0) + 1,
           userMessage: state.userMessage,
           history: state.history,
+          outputs: state.outputs ?? {},
         }))
       );
     }
 
     if (node.type === "agent") {
+      const agentNode = node;
+
       builder.addNode(
         node.id,
         wrapNode(node.id, "agent", ctx.onEvent, async (state) => {
@@ -66,26 +70,32 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
             throw new Error("Too many workflow steps");
           }
 
-          const agentNodeDef = def.nodes.find((n) => n.type === "agent");
-          const skillIds =
-            agentNodeDef?.type === "agent" ? agentNodeDef.config.skillIds ?? [] : [];
+          const config = agentNode.config;
+          let stepInput = state.userMessage;
 
-          let agentDef = builderToAgentDefinition(def);
-          if (skillIds.length) {
+          if (config.inputBinding?.kind === "nodeOutput") {
+            stepInput =
+              state.outputs?.[config.inputBinding.nodeId] ?? state.userMessage;
+          }
+
+          let agentDef = agentConfigToDefinition(config, def);
+
+          if (config.skillIds?.length) {
             const { applySkillsToAgent } = await import("@/modules/skills/lib/apply-skills");
-            agentDef = await applySkillsToAgent(agentDef, ctx.userId, skillIds);
+            agentDef = await applySkillsToAgent(agentDef, ctx.userId, config.skillIds);
           }
 
           const text = await runAgentNode(
             agentDef,
             state.history ?? [],
-            state.userMessage,
+            stepInput,
             ctx.userId,
             ctx.onEvent
           );
 
           return {
             output: text,
+            outputs: { ...(state.outputs ?? {}), [node.id]: text },
             stepCount: (state.stepCount ?? 0) + 1,
           };
         })

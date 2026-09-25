@@ -1,8 +1,28 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { AgentDefinition } from "@/modules/agents/lib/definition";
 import { defaultDefinition } from "@/modules/agents/lib/definition";
-import type { BuilderDefinition } from "./schema";
+import type { AgentNodeConfig, BuilderDefinition } from "./schema";
 import { defaultBuilderDefinition } from "./schema";
+
+export function agentConfigToDefinition(
+  config: AgentNodeConfig,
+  builder: BuilderDefinition
+): AgentDefinition {
+  return {
+    schemaVersion: 1,
+    instructions: config.instructions,
+    model: { provider: "openai", modelId: config.modelId },
+    tools: config.tools,
+    memory: builder.memory,
+    limits: {
+      maxToolCalls: builder.limits.maxToolCalls,
+      timeoutMs: builder.limits.timeoutMs,
+    },
+    github: config.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+    mcpConnectionIds: config.mcpConnectionIds ?? [],
+    skillIds: config.skillIds ?? [],
+  };
+}
 
 export function isV1Definition(raw: unknown): raw is AgentDefinition {
   return (

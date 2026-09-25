@@ -8,6 +8,7 @@ import type { GithubConfig } from "@/modules/agents/lib/definition";
 import { isCustomToolConfig } from "@/modules/builder/lib/custom-tool";
 import { popularGptModels } from "@/modules/builder/lib/models";
 import { getToolLabel } from "@/modules/builder/lib/tools-catalog";
+import { getUpstreamAgentNodes } from "@/modules/builder/lib/serialize";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ type ToolEntry = { toolId: string; config: Record<string, unknown> };
 
 export function NodeSettingsPanel() {
   const nodes = useCanvasStore((s) => s.nodes);
+  const edges = useCanvasStore((s) => s.edges);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const selectedToolIndex = useCanvasStore((s) => s.selectedToolIndex);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
@@ -89,6 +91,10 @@ export function NodeSettingsPanel() {
     };
     const modelId = (selectedNode.data.modelId as string) ?? "gpt-4o-mini";
     const tools = (selectedNode.data.tools as ToolEntry[]) ?? [];
+    const inputBinding = selectedNode.data.inputBinding as
+      | { kind: "nodeOutput"; nodeId: string }
+      | undefined;
+    const upstream = getUpstreamAgentNodes(nodes, edges, selectedNode.id);
 
     return (
       <div className="space-y-4">
@@ -135,6 +141,31 @@ export function NodeSettingsPanel() {
             ))}
           </div>
         </div>
+
+        {upstream.length > 0 && (
+          <div className="space-y-2">
+            <Label>Input from</Label>
+            <select
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              value={inputBinding?.nodeId ?? ""}
+              onChange={(e) => {
+                const nodeId = e.target.value;
+                updateNodeData(selectedNode.id, {
+                  inputBinding: nodeId
+                    ? { kind: "nodeOutput", nodeId }
+                    : undefined,
+                });
+              }}
+            >
+              <option value="">User message (default)</option>
+              {upstream.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {(n.data.label as string) ?? n.id}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Tools ({tools.length})</Label>

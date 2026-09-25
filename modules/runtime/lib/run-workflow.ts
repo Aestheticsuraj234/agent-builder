@@ -19,6 +19,7 @@ export async function runWorkflowStream(
     userMessage,
     history: effectiveHistory,
     output: "",
+    outputs: {},
     stepCount: 0,
   });
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   createBlankAgent,
   createFromTemplate,
+  createFromWorkflowTemplate,
   deleteAgent,
   fetchAgent,
   listAgents,
@@ -33,6 +34,19 @@ export function useCreateBlankAgent() {
 
   return useMutation({
     mutationFn: createBlankAgent,
+    onSuccess: (agent) => {
+      queryClient.invalidateQueries({ queryKey: agentKeys.list() });
+      router.push(`/agents/${agent.id}/builder`);
+    },
+  });
+}
+
+export function useCreateFromWorkflowTemplate() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: createFromWorkflowTemplate,
     onSuccess: (agent) => {
       queryClient.invalidateQueries({ queryKey: agentKeys.list() });
       router.push(`/agents/${agent.id}/builder`);
