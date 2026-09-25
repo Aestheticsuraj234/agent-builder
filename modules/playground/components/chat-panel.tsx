@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { AgentDefinition } from "@/modules/agents/lib/definition";
 import { streamAgentRun } from "@/modules/playground/lib/stream-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ export function ChatPanel({
   starterPrompts,
 }: {
   agentId: string;
-  definition: AgentDefinition;
+  definition: unknown;
   welcomeMessage?: string;
   starterPrompts?: string[];
 }) {

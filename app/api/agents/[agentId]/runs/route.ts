@@ -1,8 +1,7 @@
 import { headers } from "next/headers";
 import prisma from "@/lib/db";
-import type { AgentDefinition } from "@/modules/agents/lib/definition";
 import { auth } from "@/modules/auth/lib/auth";
-import { runAgentStream } from "@/modules/runtime/lib/run-agent";
+import { runWorkflowStream } from "@/modules/runtime/lib/run-workflow";
 
 export const runtime = "nodejs";
 
@@ -20,7 +19,7 @@ export async function POST(
   const body = await req.json();
   const message = body.message as string;
   const conversationId = body.conversationId as string | undefined;
-  const definition = body.definition as AgentDefinition;
+  const definition = body.definition;
 
   const agent = await prisma.agent.findFirst({
     where: { id: agentId, userId: session.user.id },
@@ -73,7 +72,7 @@ export async function POST(
       }
 
       try {
-        assistantText = await runAgentStream(
+        assistantText = await runWorkflowStream(
           definition,
           history,
           message,
