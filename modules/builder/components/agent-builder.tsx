@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
+import { publishAgent } from "@/modules/agents/actions/publish";
 import { useSaveAgent } from "@/modules/agents/hooks/use-agents";
 import { AgentCanvas } from "@/modules/builder/components/agent-canvas";
 import { NodeSettingsPanel } from "@/modules/builder/components/node-settings-panel";
@@ -50,6 +51,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     init(agent.draftDefinition, agent.canvas);
@@ -65,6 +67,12 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
       setSettingsOpen(true);
     }
   }, [selectedNodeId]);
+
+  async function handlePublish() {
+    setPublishing(true);
+    await publishAgent(agent.id);
+    setPublishing(false);
+  }
 
   function handleSave() {
     saveAgent.mutate(
@@ -109,6 +117,12 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           </Button>
           <Button onClick={handleSave} disabled={saveAgent.isPending}>
             {saveAgent.isPending ? "Saving..." : "Save"}
+          </Button>
+          <Button variant="outline" onClick={handlePublish} disabled={publishing}>
+            {publishing ? "Publishing..." : "Publish"}
+          </Button>
+          <Button variant="outline" render={<Link href={`/chat/${agent.id}`} />} nativeButton={false}>
+            Open chat
           </Button>
           <Button variant="outline" render={<Link href="/agents" />} nativeButton={false}>
             Back
