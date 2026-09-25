@@ -20,6 +20,7 @@ export async function runWorkflowStream(
     history: effectiveHistory,
     output: "",
     outputs: {},
+    decisions: {},
     stepCount: 0,
   });
 

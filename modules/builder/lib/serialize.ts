@@ -26,6 +26,8 @@ function flowDataFromAgentConfig(config: AgentNodeConfig, memoryEnabled: boolean
     mcpConnectionIds: config.mcpConnectionIds ?? [],
     skillIds: config.skillIds ?? [],
     inputBinding: config.inputBinding,
+    outputFormat: config.outputFormat ?? "text",
+    jsonHint: config.jsonHint,
     memoryEnabled,
   };
 }
@@ -41,6 +43,20 @@ function flowNodeFromBuilderNode(
       type: "start",
       position,
       data: { label: node.label ?? "Start" },
+    };
+  }
+
+  if (node.type === "condition") {
+    return {
+      id: node.id,
+      type: "condition",
+      position,
+      data: {
+        label: node.config.label,
+        sourceNodeId: node.config.sourceNodeId,
+        field: node.config.field,
+        equals: node.config.equals,
+      },
     };
   }
 
@@ -79,6 +95,8 @@ function agentConfigFromFlowData(data: Record<string, unknown>): AgentNodeConfig
     mcpConnectionIds: (data.mcpConnectionIds as string[]) ?? [],
     skillIds: (data.skillIds as string[]) ?? [],
     inputBinding: data.inputBinding as AgentNodeConfig["inputBinding"],
+    outputFormat: (data.outputFormat as AgentNodeConfig["outputFormat"]) ?? "text",
+    jsonHint: data.jsonHint as string | undefined,
   };
 }
 
@@ -128,6 +146,7 @@ export function definitionToCanvas(
     id: e.id,
     source: e.source,
     target: e.target,
+    sourceHandle: e.sourceHandle,
     animated: true,
   }));
 
@@ -166,6 +185,18 @@ export function canvasToBuilderDefinition(
           config: agentConfigFromFlowData(n.data as Record<string, unknown>),
         };
       }
+      if (n.type === "condition") {
+        return {
+          id: n.id,
+          type: "condition" as const,
+          config: {
+            label: (n.data.label as string) ?? "Condition",
+            sourceNodeId: (n.data.sourceNodeId as string) ?? "",
+            field: (n.data.field as string) ?? "classification",
+            equals: (n.data.equals as string) ?? "",
+          },
+        };
+      }
       return null;
     })
     .filter(Boolean) as BuilderDefinition["nodes"];
@@ -175,12 +206,17 @@ export function canvasToBuilderDefinition(
       const ids = new Set(builderNodes.map((n) => n.id));
       return ids.has(e.source) && ids.has(e.target);
     })
-    .map((e) => ({ id: e.id, source: e.source, target: e.target }));
+    .map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? undefined,
+    }));
 
   if (builderEdges.length === 0) {
     builderEdges = [
-      { id: "e-start-agent", source: "start", target: "agent" },
-      { id: "e-agent-end", source: "agent", target: "end" },
+      { id: "e-start-agent", source: "start", target: "agent", sourceHandle: undefined },
+      { id: "e-agent-end", source: "agent", target: "end", sourceHandle: undefined },
     ];
   }
 

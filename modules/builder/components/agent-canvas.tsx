@@ -11,6 +11,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { AgentNode } from "@/modules/builder/components/nodes/agent-node";
 import { EndNode } from "@/modules/builder/components/nodes/end-node";
+import { ConditionNode } from "@/modules/builder/components/nodes/condition-node";
 import { StartNode } from "@/modules/builder/components/nodes/start-node";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
 import {
@@ -21,6 +22,7 @@ import {
 const nodeTypes: NodeTypes = {
   start: StartNode,
   agent: AgentNode,
+  condition: ConditionNode,
   end: EndNode,
 };
 

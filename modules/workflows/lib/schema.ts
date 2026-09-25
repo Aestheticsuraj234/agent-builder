@@ -29,6 +29,15 @@ export const agentNodeConfigSchema = z.object({
       nodeId: z.string(),
     })
     .optional(),
+  outputFormat: z.enum(["text", "json"]).default("text"),
+  jsonHint: z.string().optional(),
+});
+
+export const conditionNodeConfigSchema = z.object({
+  label: z.string().default("Condition"),
+  sourceNodeId: z.string(),
+  field: z.string().default("classification"),
+  equals: z.string(),
 });
 
 export type AgentNodeConfig = z.infer<typeof agentNodeConfigSchema>;
@@ -49,6 +58,11 @@ export const builderNodeSchema = z.discriminatedUnion("type", [
     type: z.literal("end"),
     label: z.string().optional(),
   }),
+  z.object({
+    id: z.string(),
+    type: z.literal("condition"),
+    config: conditionNodeConfigSchema,
+  }),
 ]);
 
 export type BuilderNode = z.infer<typeof builderNodeSchema>;
@@ -57,6 +71,7 @@ export const executionEdgeSchema = z.object({
   id: z.string(),
   source: z.string(),
   target: z.string(),
+  sourceHandle: z.string().optional(),
 });
 
 export type ExecutionEdge = z.infer<typeof executionEdgeSchema>;
@@ -88,6 +103,7 @@ export function defaultBuilderDefinition(
     github: partial?.github ?? { owner: "", repo: "", defaultPrNumber: "" },
     mcpConnectionIds: partial?.mcpConnectionIds ?? [],
     skillIds: partial?.skillIds ?? [],
+    outputFormat: partial?.outputFormat ?? "text",
   };
 
   return {

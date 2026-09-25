@@ -1,6 +1,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import type { BuilderDefinition } from "@/modules/workflows/lib/schema";
 import { agentConfigToDefinition } from "@/modules/workflows/lib/migrate-v1";
+import { evaluateCondition } from "./evaluate-condition";
 import { runAgentNode } from "./run-agent-node";
 import type { RunEvent } from "./run-agent";
 import { validateGraph } from "./validate-graph";
@@ -10,6 +11,7 @@ const WorkflowState = Annotation.Root({
   history: Annotation<{ role: string; content: string }[]>,
   output: Annotation<string>,
   outputs: Annotation<Record<string, string>>,
+  decisions: Annotation<Record<string, string>>,
   stepCount: Annotation<number>,
 });
 
@@ -42,10 +44,23 @@ function wrapNode(
   };
 }
 
+function getConditionTargets(def: BuilderDefinition, conditionId: string) {
+  const trueEdge = def.edges.find(
+    (e) => e.source === conditionId && e.sourceHandle === "true"
+  );
+  const falseEdge = def.edges.find(
+    (e) => e.source === conditionId && e.sourceHandle === "false"
+  );
+  return { true: trueEdge?.target, false: falseEdge?.target };
+}
+
 export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
   validateGraph(def);
 
   const builder = new StateGraph(WorkflowState);
+  const conditionIds = new Set(
+    def.nodes.filter((n) => n.type === "condition").map((n) => n.id)
+  );
 
   for (const node of def.nodes) {
     if (node.type === "start") {
@@ -56,6 +71,7 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
           userMessage: state.userMessage,
           history: state.history,
           outputs: state.outputs ?? {},
+          decisions: state.decisions ?? {},
         }))
       );
     }
@@ -80,6 +96,13 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
 
           let agentDef = agentConfigToDefinition(config, def);
 
+          if (config.outputFormat === "json" && config.jsonHint) {
+            agentDef = {
+              ...agentDef,
+              instructions: `${agentDef.instructions}\n\n${config.jsonHint}`,
+            };
+          }
+
           if (config.skillIds?.length) {
             const { applySkillsToAgent } = await import("@/modules/skills/lib/apply-skills");
             agentDef = await applySkillsToAgent(agentDef, ctx.userId, config.skillIds);
@@ -102,6 +125,24 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
       );
     }
 
+    if (node.type === "condition") {
+      const config = node.config;
+
+      builder.addNode(
+        node.id,
+        wrapNode(node.id, "condition", ctx.onEvent, async (state) => {
+          const raw = state.outputs?.[config.sourceNodeId] ?? "";
+          const pass = evaluateCondition(raw, config.field, config.equals);
+          const branch = pass ? "true" : "false";
+
+          return {
+            decisions: { ...(state.decisions ?? {}), [node.id]: branch },
+            stepCount: (state.stepCount ?? 0) + 1,
+          };
+        })
+      );
+    }
+
     if (node.type === "end") {
       builder.addNode(
         node.id,
@@ -114,7 +155,23 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
   }
 
   for (const edge of def.edges) {
+    if (conditionIds.has(edge.source)) continue;
     builder.addEdge(edge.source as any, edge.target as any);
+  }
+
+  for (const node of def.nodes) {
+    if (node.type !== "condition") continue;
+    const targets = getConditionTargets(def, node.id);
+    if (targets.true && targets.false) {
+      builder.addConditionalEdges(
+        node.id as any,
+        (state: any) => state.decisions?.[node.id] ?? "false",
+        {
+          true: targets.true as any,
+          false: targets.false as any,
+        }
+      );
+    }
   }
 
   const startNode = def.nodes.find((n) => n.type === "start")!;

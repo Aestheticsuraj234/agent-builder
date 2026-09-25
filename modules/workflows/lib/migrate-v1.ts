@@ -120,6 +120,7 @@ export function migrateV1CanvasToV2(
       defaultAgent.config.github,
     mcpConnectionIds: defaultAgent.config.mcpConnectionIds ?? [],
     skillIds: defaultAgent.config.skillIds ?? [],
+    outputFormat: defaultAgent.config.outputFormat ?? "text",
   };
 
   base.memory.enabled = !!memoryNode && isConnected("memory");

@@ -47,6 +47,7 @@ type CanvasStore = {
   getAgentDefinition: () => AgentDefinition;
   getCanvas: () => { nodes: Node[]; edges: Edge[] };
   addAgentNode: () => void;
+  addConditionNode: () => void;
   markClean: () => void;
 };
 
@@ -72,6 +73,10 @@ function canConnect(connection: Connection, nodes: Node[]) {
   if (source.type === "start" && target.type === "agent") return true;
   if (source.type === "agent" && target.type === "agent") return true;
   if (source.type === "agent" && target.type === "end") return true;
+  if (source.type === "agent" && target.type === "condition") return true;
+  if (source.type === "condition" && (target.type === "agent" || target.type === "end")) {
+    return connection.sourceHandle === "true" || connection.sourceHandle === "false";
+  }
 
   return false;
 }
@@ -107,7 +112,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const filtered = changes.filter((change) => {
       if (change.type !== "remove") return true;
       const node = get().nodes.find((n) => n.id === change.id);
-      return node?.type !== "start" && node?.type !== "agent" && node?.type !== "end";
+      return (
+        node?.type !== "start" &&
+        node?.type !== "agent" &&
+        node?.type !== "end" &&
+        node?.type !== "condition"
+      );
     });
 
     set({
@@ -212,6 +222,54 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       nodes: get().nodes.map((n) =>
         n.type === "agent" ? { ...n, data: { ...n.data, memoryEnabled: next } } : n
       ),
+      isDirty: true,
+    });
+  },
+
+  addConditionNode() {
+    const { nodes, edges } = get();
+    const endNode = nodes.find((n) => n.type === "end");
+    if (!endNode) return;
+
+    const edgeToEnd = edges.find((e) => e.target === endNode.id);
+    const prevId = edgeToEnd?.source;
+    if (!prevId) return;
+
+    const newId = `condition-${Date.now()}`;
+
+    set({
+      nodes: [
+        ...nodes,
+        {
+          id: newId,
+          type: "condition",
+          position: { x: 280, y: 320 },
+          data: {
+            label: "Condition",
+            sourceNodeId: prevId,
+            field: "classification",
+            equals: "flight",
+          },
+        },
+      ],
+      edges: [
+        ...edges.filter((e) => !(e.source === prevId && e.target === endNode.id)),
+        { id: `e-${prevId}-${newId}`, source: prevId, target: newId, animated: true },
+        {
+          id: `e-${newId}-true-${endNode.id}`,
+          source: newId,
+          target: endNode.id,
+          sourceHandle: "true",
+          animated: true,
+        },
+        {
+          id: `e-${newId}-false-${endNode.id}`,
+          source: newId,
+          target: endNode.id,
+          sourceHandle: "false",
+          animated: true,
+        },
+      ],
       isDirty: true,
     });
   },

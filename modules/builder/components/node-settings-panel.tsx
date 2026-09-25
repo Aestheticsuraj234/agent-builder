@@ -72,6 +72,49 @@ export function NodeSettingsPanel() {
     );
   }
 
+  if (selectedNode.type === "condition") {
+    const agentNodes = nodes.filter((n) => n.type === "agent");
+
+    return (
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium">Condition</h3>
+        <div className="space-y-2">
+          <Label>Source agent output</Label>
+          <select
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            value={(selectedNode.data.sourceNodeId as string) ?? ""}
+            onChange={(e) =>
+              updateNodeData(selectedNode.id, { sourceNodeId: e.target.value })
+            }
+          >
+            {agentNodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {(n.data.label as string) ?? n.id}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label>JSON field</Label>
+          <Input
+            value={(selectedNode.data.field as string) ?? "classification"}
+            onChange={(e) => updateNodeData(selectedNode.id, { field: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Equals (true branch)</Label>
+          <Input
+            value={(selectedNode.data.equals as string) ?? ""}
+            onChange={(e) => updateNodeData(selectedNode.id, { equals: e.target.value })}
+          />
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Connect the true/false handles to different agent nodes.
+        </p>
+      </div>
+    );
+  }
+
   if (selectedNode.type === "end") {
     return (
       <div className="space-y-4">

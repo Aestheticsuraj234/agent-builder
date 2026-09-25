@@ -41,6 +41,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
   const getCanvas = useCanvasStore((s) => s.getCanvas);
   const markClean = useCanvasStore((s) => s.markClean);
   const addAgentNode = useCanvasStore((s) => s.addAgentNode);
+  const addConditionNode = useCanvasStore((s) => s.addConditionNode);
 
   const saveAgent = useSaveAgent(agent.id);
 
@@ -92,7 +93,10 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={addAgentNode}>
-            Add agent step
+            Add agent
+          </Button>
+          <Button variant="outline" size="sm" onClick={addConditionNode}>
+            Add condition
           </Button>
           <Button variant="outline" size="sm" onClick={() => setToolsOpen(true)}>
             Tools
