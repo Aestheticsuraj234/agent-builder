@@ -37,7 +37,16 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
           throw new Error("Too many workflow steps");
         }
 
-        const agentDef = builderToAgentDefinition(def);
+        const agentNodeDef = def.nodes.find((n) => n.type === "agent");
+        const skillIds =
+          agentNodeDef?.type === "agent" ? agentNodeDef.config.skillIds ?? [] : [];
+
+        let agentDef = builderToAgentDefinition(def);
+        if (skillIds.length) {
+          const { applySkillsToAgent } = await import("@/modules/skills/lib/apply-skills");
+          agentDef = await applySkillsToAgent(agentDef, ctx.userId, skillIds);
+        }
+
         const text = await runAgentNode(
           agentDef,
           state.history ?? [],

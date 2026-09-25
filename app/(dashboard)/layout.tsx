@@ -36,6 +36,12 @@ export default async function DashboardLayout({
           >
             Integrations
           </Link>
+          <Link
+            href="/agents/skills"
+            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Skills
+          </Link>
         </nav>
         <div className="mt-auto space-y-3 border-t border-border p-3">
           <UserButton />

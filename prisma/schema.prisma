@@ -24,9 +24,27 @@ model User {
   accounts      Account[]
   agents          Agent[]
   mcpConnections  McpConnection[]
+  skills          Skill[]
 
   @@unique([email])
   @@map("user")
+}
+
+model Skill {
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  description      String   @default("")
+  instructions     String
+  toolIds          Json     @default("[]")
+  mcpConnectionIds Json     @default("[]")
+  starterPrompts   Json     @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("skill")
 }
 
 model McpConnection {

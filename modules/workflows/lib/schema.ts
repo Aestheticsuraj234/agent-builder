@@ -22,6 +22,7 @@ export const agentNodeConfigSchema = z.object({
   tools: z.array(toolConfigSchema).default([]),
   github: githubConfigSchema.optional(),
   mcpConnectionIds: z.array(z.string()).default([]),
+  skillIds: z.array(z.string()).default([]),
 });
 
 export type AgentNodeConfig = z.infer<typeof agentNodeConfigSchema>;
@@ -80,6 +81,7 @@ export function defaultBuilderDefinition(
     tools: partial?.tools ?? [],
     github: partial?.github ?? { owner: "", repo: "", defaultPrNumber: "" },
     mcpConnectionIds: partial?.mcpConnectionIds ?? [],
+    skillIds: partial?.skillIds ?? [],
   };
 
   return {
