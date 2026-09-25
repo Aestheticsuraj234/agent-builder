@@ -1,6 +1,8 @@
 "use client";
 
 import { CustomToolSettings } from "@/modules/builder/components/custom-tool-settings";
+import { GithubSettings } from "@/modules/builder/components/github-settings";
+import type { GithubConfig } from "@/modules/agents/lib/definition";
 import { isCustomToolConfig } from "@/modules/builder/lib/custom-tool";
 import { popularGptModels } from "@/modules/builder/lib/models";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
@@ -26,6 +28,12 @@ export function NodeSettingsPanel() {
   }
 
   if (selectedNode.type === "agent") {
+    const github = (selectedNode.data.github as GithubConfig) ?? {
+      owner: "",
+      repo: "",
+      defaultPrNumber: "",
+    };
+
     return (
       <div className="space-y-4">
         <h3 className="text-sm font-medium">Agent instructions</h3>
@@ -33,11 +41,12 @@ export function NodeSettingsPanel() {
           <Label htmlFor="instructions">Instructions</Label>
           <Textarea
             id="instructions"
-            rows={10}
+            rows={8}
             defaultValue={(selectedNode.data.instructions as string) ?? ""}
             onChange={(e) => updateNodeData(selectedNode.id, { instructions: e.target.value })}
           />
         </div>
+        <GithubSettings nodeId={selectedNode.id} github={github} />
       </div>
     );
   }

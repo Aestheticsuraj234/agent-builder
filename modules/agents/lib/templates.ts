@@ -85,12 +85,13 @@ export const templates: AgentTemplate[] = [
     definition: {
       ...defaultDefinition(),
       instructions:
-        "You are a coding assistant. Help users understand code, find files, and explain how things work. Use GitHub tools when needed.",
+        "You are a coding assistant. Help users understand code in their GitHub repo. Use github_read_file and github_search_code. Set owner/repo in settings or ask the user.",
       tools: [
         { toolId: "github_read_file", config: {} },
         { toolId: "github_search_code", config: {} },
         { toolId: "read_webpage", config: {} },
       ],
+      github: { owner: "", repo: "", defaultPrNumber: "" },
     },
   },
   {
@@ -103,12 +104,13 @@ export const templates: AgentTemplate[] = [
     definition: {
       ...defaultDefinition(),
       instructions:
-        "You are a PR review assistant. Look at diffs, spot bugs, suggest improvements, and summarize changes clearly.",
+        "You are a PR review assistant. Use github_get_pr and github_get_diff to review changes. Ask for PR number or URL if not set in GitHub settings.",
       tools: [
         { toolId: "github_get_pr", config: {} },
         { toolId: "github_get_diff", config: {} },
         { toolId: "read_webpage", config: {} },
       ],
+      github: { owner: "", repo: "", defaultPrNumber: "" },
     },
   },
 ];

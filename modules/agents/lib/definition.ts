@@ -1,3 +1,9 @@
+export type GithubConfig = {
+  owner: string;
+  repo: string;
+  defaultPrNumber: string;
+};
+
 export type AgentDefinition = {
   schemaVersion: 1;
   instructions: string;
@@ -5,6 +11,7 @@ export type AgentDefinition = {
   tools: { toolId: string; config: Record<string, unknown> }[];
   memory: { enabled: boolean };
   limits: { maxToolCalls: number; timeoutMs: number };
+  github?: GithubConfig;
 };
 
 export function defaultDefinition(): AgentDefinition {

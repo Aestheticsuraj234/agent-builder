@@ -22,7 +22,11 @@ export function definitionToCanvas(
       id: "agent",
       type: "agent",
       position: { x: 280, y: 220 },
-      data: { label: "Agent", instructions: definition.instructions },
+      data: {
+        label: "Agent",
+        instructions: definition.instructions,
+        github: definition.github ?? { owner: "", repo: "", defaultPrNumber: "" },
+      },
     },
     {
       id: "model",
@@ -90,6 +94,11 @@ export function canvasToDefinition(nodes: Node[], edges: Edge[]): AgentDefinitio
     tools,
     memory: { enabled: !!memoryNode && isConnected("memory") },
     limits: base.limits,
+    github: (agentNode?.data.github as AgentDefinition["github"]) ?? {
+      owner: "",
+      repo: "",
+      defaultPrNumber: "",
+    },
   };
 }
 

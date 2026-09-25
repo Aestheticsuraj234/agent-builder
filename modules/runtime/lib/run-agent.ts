@@ -19,6 +19,7 @@ export async function runAgentStream(
   definition: AgentDefinition,
   history: { role: string; content: string }[],
   userMessage: string,
+  userId: string,
   onEvent: (event: RunEvent) => void
 ) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -28,7 +29,7 @@ export async function runAgentStream(
     return "";
   }
 
-  const tools = getToolsForAgent(definition);
+  const tools = await getToolsForAgent(definition, userId);
   const model = new ChatOpenAI({
     model: definition.model.modelId,
     apiKey,

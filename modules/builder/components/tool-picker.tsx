@@ -13,13 +13,35 @@ export function ToolPicker() {
 
   const addedToolIds = nodes.filter((n) => n.type === "tool").map((n) => n.data.toolId as string);
   const hasMemory = nodes.some((n) => n.type === "memory");
+  const generalTools = toolsCatalog.filter((t) => !t.id.startsWith("github_"));
+  const githubTools = toolsCatalog.filter((t) => t.id.startsWith("github_"));
 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="mb-2 text-sm font-medium">Add tools</h2>
+        <h2 className="mb-2 text-sm font-medium">General tools</h2>
         <div className="space-y-1">
-          {toolsCatalog.map((tool) => (
+          {generalTools.map((tool) => (
+            <Button
+              key={tool.id}
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              disabled={addedToolIds.includes(tool.id)}
+              onClick={() => addTool(tool.id)}
+            >
+              <AppIcon name={tool.icon} className="mr-2 size-4" />
+              {tool.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-2 text-sm font-medium">GitHub tools</h2>
+        <p className="text-muted-foreground mb-2 text-xs">Uses your GitHub sign-in token.</p>
+        <div className="space-y-1">
+          {githubTools.map((tool) => (
             <Button
               key={tool.id}
               variant="outline"

@@ -73,7 +73,12 @@ export async function POST(
       }
 
       try {
-        assistantText = await runAgentStream(definition, history, message, (event) => {
+        assistantText = await runAgentStream(
+          definition,
+          history,
+          message,
+          session.user.id,
+          (event) => {
           if (event.type === "text_delta") {
             send(event);
           }
@@ -88,7 +93,8 @@ export async function POST(
           if (event.type === "run_failed") {
             send(event);
           }
-        });
+        }
+        );
 
         await prisma.message.create({
           data: {
