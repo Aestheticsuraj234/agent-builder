@@ -1,23 +1,28 @@
 {
   "name": "agent-builder",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "contract:emit": "prisma contract emit"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
     "@hugeicons/core-free-icons": "^4.3.5",
     "@hugeicons/react": "^1.1.10",
+    "@prisma/orm-postgres": "8.0.0-rc.11",
     "@shadcn/react": "^0.3.1",
     "@tanstack/react-query": "^5.103.2",
+    "better-auth": "^1.7.5",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.4.0",
     "date-fns": "^4.4.0",
+    "dotenv": "^18.0.3",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.5.0",
     "next": "16.3.6",
@@ -37,8 +42,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "prisma": "8.0.0-rc.15",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   },
   "packageManager": "pnpm@12.6.0"
 }
