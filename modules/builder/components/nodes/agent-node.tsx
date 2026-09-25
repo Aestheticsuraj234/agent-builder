@@ -6,14 +6,23 @@ import { getToolIcon, getToolLabel } from "@/modules/builder/lib/tools-catalog";
 
 type ToolEntry = { toolId: string; config?: Record<string, unknown> };
 
+const traceRing: Record<string, string> = {
+  running: "ring-4 ring-yellow-400/70",
+  completed: "ring-4 ring-emerald-400/70",
+  failed: "ring-4 ring-red-400/70",
+};
+
 export function AgentNode({ data }: NodeProps) {
+  const trace = data.traceStatus as string | null;
   const tools = (data.tools as ToolEntry[]) ?? [];
   const modelId = (data.modelId as string) ?? "gpt-4o-mini";
   const memoryEnabled = !!data.memoryEnabled;
   const mcpCount = ((data.mcpConnectionIds as string[]) ?? []).length;
 
   return (
-    <div className="min-w-[200px] max-w-[260px] rounded-xl border-2 border-primary bg-card px-4 py-3 shadow-sm">
+    <div
+      className={`min-w-[200px] max-w-[260px] rounded-xl border-2 border-primary bg-card px-4 py-3 shadow-sm ${trace ? traceRing[trace] ?? "" : ""}`}
+    >
       <Handle type="target" position={Position.Top} id="top" />
       <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
         <AppIcon name="bot" className="size-3.5" />

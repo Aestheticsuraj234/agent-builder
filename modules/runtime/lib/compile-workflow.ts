@@ -17,6 +17,30 @@ export type WorkflowContext = {
   onEvent: (event: RunEvent) => void;
 };
 
+function wrapNode(
+  nodeId: string,
+  nodeType: string,
+  onEvent: (event: RunEvent) => void,
+  fn: (state: any) => Promise<any>
+) {
+  return async (state: any) => {
+    onEvent({ type: "node_started", nodeId, nodeType });
+    try {
+      const result = await fn(state);
+      onEvent({ type: "node_completed", nodeId, nodeType });
+      return result;
+    } catch (err: any) {
+      onEvent({
+        type: "node_failed",
+        nodeId,
+        nodeType,
+        error: err?.message ?? "Node failed",
+      });
+      throw err;
+    }
+  };
+}
+
 export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
   validateGraph(def);
 
@@ -24,49 +48,58 @@ export function compileWorkflow(def: BuilderDefinition, ctx: WorkflowContext) {
 
   for (const node of def.nodes) {
     if (node.type === "start") {
-      builder.addNode(node.id, async (state) => ({
-        stepCount: (state.stepCount ?? 0) + 1,
-        userMessage: state.userMessage,
-        history: state.history,
-      }));
+      builder.addNode(
+        node.id,
+        wrapNode(node.id, "start", ctx.onEvent, async (state) => ({
+          stepCount: (state.stepCount ?? 0) + 1,
+          userMessage: state.userMessage,
+          history: state.history,
+        }))
+      );
     }
 
     if (node.type === "agent") {
-      builder.addNode(node.id, async (state) => {
-        if ((state.stepCount ?? 0) >= def.limits.maxGraphSteps) {
-          throw new Error("Too many workflow steps");
-        }
+      builder.addNode(
+        node.id,
+        wrapNode(node.id, "agent", ctx.onEvent, async (state) => {
+          if ((state.stepCount ?? 0) >= def.limits.maxGraphSteps) {
+            throw new Error("Too many workflow steps");
+          }
 
-        const agentNodeDef = def.nodes.find((n) => n.type === "agent");
-        const skillIds =
-          agentNodeDef?.type === "agent" ? agentNodeDef.config.skillIds ?? [] : [];
+          const agentNodeDef = def.nodes.find((n) => n.type === "agent");
+          const skillIds =
+            agentNodeDef?.type === "agent" ? agentNodeDef.config.skillIds ?? [] : [];
 
-        let agentDef = builderToAgentDefinition(def);
-        if (skillIds.length) {
-          const { applySkillsToAgent } = await import("@/modules/skills/lib/apply-skills");
-          agentDef = await applySkillsToAgent(agentDef, ctx.userId, skillIds);
-        }
+          let agentDef = builderToAgentDefinition(def);
+          if (skillIds.length) {
+            const { applySkillsToAgent } = await import("@/modules/skills/lib/apply-skills");
+            agentDef = await applySkillsToAgent(agentDef, ctx.userId, skillIds);
+          }
 
-        const text = await runAgentNode(
-          agentDef,
-          state.history ?? [],
-          state.userMessage,
-          ctx.userId,
-          ctx.onEvent
-        );
+          const text = await runAgentNode(
+            agentDef,
+            state.history ?? [],
+            state.userMessage,
+            ctx.userId,
+            ctx.onEvent
+          );
 
-        return {
-          output: text,
-          stepCount: (state.stepCount ?? 0) + 1,
-        };
-      });
+          return {
+            output: text,
+            stepCount: (state.stepCount ?? 0) + 1,
+          };
+        })
+      );
     }
 
     if (node.type === "end") {
-      builder.addNode(node.id, async (state) => ({
-        output: state.output ?? "",
-        stepCount: (state.stepCount ?? 0) + 1,
-      }));
+      builder.addNode(
+        node.id,
+        wrapNode(node.id, "end", ctx.onEvent, async (state) => ({
+          output: state.output ?? "",
+          stepCount: (state.stepCount ?? 0) + 1,
+        }))
+      );
     }
   }
 

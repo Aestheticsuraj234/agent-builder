@@ -5,6 +5,9 @@ export type RunEvent =
   | { type: "text_delta"; text: string }
   | { type: "tool_started"; tool: string; input: unknown }
   | { type: "tool_completed"; tool: string; output: string }
+  | { type: "node_started"; nodeId: string; nodeType: string }
+  | { type: "node_completed"; nodeId: string; nodeType: string }
+  | { type: "node_failed"; nodeId: string; nodeType: string; error: string }
   | { type: "run_failed"; error: string };
 
 export async function runAgentStream(

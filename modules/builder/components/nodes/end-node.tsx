@@ -3,9 +3,19 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { AppIcon } from "@/components/app-icon";
 
+const traceRing: Record<string, string> = {
+  running: "ring-4 ring-yellow-400/70",
+  completed: "ring-4 ring-emerald-400/70",
+  failed: "ring-4 ring-red-400/70",
+};
+
 export function EndNode({ data }: NodeProps) {
+  const trace = data.traceStatus as string | null;
+
   return (
-    <div className="min-w-[140px] rounded-xl border-2 border-rose-500/60 bg-card px-4 py-3 shadow-sm">
+    <div
+      className={`min-w-[140px] rounded-xl border-2 border-rose-500/60 bg-card px-4 py-3 shadow-sm ${trace ? traceRing[trace] ?? "" : ""}`}
+    >
       <Handle type="target" position={Position.Top} id="top" />
       <p className="flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
         <AppIcon name="flag" className="size-3.5" />

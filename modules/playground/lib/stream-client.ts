@@ -2,18 +2,23 @@ export type StreamEvent =
   | { type: "text_delta"; text: string }
   | { type: "tool_started"; tool: string; input: unknown }
   | { type: "tool_completed"; tool: string; output: string }
-  | { type: "run_completed"; conversationId: string }
+  | { type: "node_started"; nodeId: string; nodeType: string }
+  | { type: "node_completed"; nodeId: string; nodeType: string }
+  | { type: "node_failed"; nodeId: string; nodeType: string; error: string }
+  | { type: "run_completed"; conversationId: string; runId?: string }
   | { type: "run_failed"; error: string };
 
 export async function streamAgentRun(
   agentId: string,
   body: { message: string; conversationId?: string; definition: unknown },
-  onEvent: (event: StreamEvent) => void
+  onEvent: (event: StreamEvent) => void,
+  signal?: AbortSignal
 ) {
   const res = await fetch(`/api/agents/${agentId}/runs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!res.ok) {
@@ -28,6 +33,11 @@ export async function streamAgentRun(
   let buffer = "";
 
   while (true) {
+    if (signal?.aborted) {
+      reader.cancel();
+      break;
+    }
+
     const { done, value } = await reader.read();
     if (done) break;
 

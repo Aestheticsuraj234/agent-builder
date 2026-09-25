@@ -60,8 +60,18 @@ export async function POST(
     },
   });
 
+  const run = await prisma.agentRun.create({
+    data: {
+      conversationId: conversation.id,
+      agentId,
+      userId: session.user.id,
+      status: "running",
+    },
+  });
+
   const toolEvents: any[] = [];
   let assistantText = "";
+  let eventSeq = 0;
 
   const encoder = new TextEncoder();
 
@@ -71,28 +81,72 @@ export async function POST(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       }
 
+      async function logEvent(eventType: string, payload: any) {
+        eventSeq++;
+        await prisma.runEvent.create({
+          data: {
+            runId: run.id,
+            sequence: eventSeq,
+            eventType,
+            payload: payload as any,
+          },
+        });
+      }
+
       try {
         assistantText = await runWorkflowStream(
           definition,
           history,
           message,
           session.user.id,
-          (event) => {
-          if (event.type === "text_delta") {
-            send(event);
+          async (event) => {
+            if (event.type === "text_delta") {
+              send(event);
+              await logEvent("text_delta", event);
+            }
+            if (event.type === "tool_started") {
+              toolEvents.push({ ...event, status: "started" });
+              send(event);
+              await logEvent("tool_started", event);
+            }
+            if (event.type === "tool_completed") {
+              toolEvents.push({ ...event, status: "completed" });
+              send(event);
+              await logEvent("tool_completed", event);
+            }
+            if (event.type === "node_started") {
+              send(event);
+              await logEvent("node_started", event);
+              await prisma.nodeExecution.create({
+                data: {
+                  runId: run.id,
+                  nodeId: event.nodeId,
+                  nodeType: event.nodeType,
+                  status: "running",
+                },
+              });
+            }
+            if (event.type === "node_completed") {
+              send(event);
+              await logEvent("node_completed", event);
+              await prisma.nodeExecution.updateMany({
+                where: { runId: run.id, nodeId: event.nodeId, status: "running" },
+                data: { status: "completed" },
+              });
+            }
+            if (event.type === "node_failed") {
+              send(event);
+              await logEvent("node_failed", event);
+              await prisma.nodeExecution.updateMany({
+                where: { runId: run.id, nodeId: event.nodeId, status: "running" },
+                data: { status: "failed", error: event.error },
+              });
+            }
+            if (event.type === "run_failed") {
+              send(event);
+              await logEvent("run_failed", event);
+            }
           }
-          if (event.type === "tool_started") {
-            toolEvents.push({ ...event, status: "started" });
-            send(event);
-          }
-          if (event.type === "tool_completed") {
-            toolEvents.push({ ...event, status: "completed" });
-            send(event);
-          }
-          if (event.type === "run_failed") {
-            send(event);
-          }
-        }
         );
 
         await prisma.message.create({
@@ -104,8 +158,17 @@ export async function POST(
           },
         });
 
-        send({ type: "run_completed", conversationId: conversation!.id });
+        await prisma.agentRun.update({
+          where: { id: run.id },
+          data: { status: "completed" },
+        });
+
+        send({ type: "run_completed", conversationId: conversation!.id, runId: run.id });
       } catch (err: any) {
+        await prisma.agentRun.update({
+          where: { id: run.id },
+          data: { status: "failed" },
+        });
         send({ type: "run_failed", error: err?.message ?? "Run failed" });
       }
 
