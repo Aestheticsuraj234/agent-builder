@@ -10,7 +10,12 @@ export type StreamEvent =
 
 export async function streamAgentRun(
   agentId: string,
-  body: { message: string; conversationId?: string; definition: unknown },
+  body: {
+    message: string;
+    conversationId?: string;
+    definition: unknown;
+    publishedVersion?: number;
+  },
   onEvent: (event: StreamEvent) => void,
   signal?: AbortSignal
 ) {

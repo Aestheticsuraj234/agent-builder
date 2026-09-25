@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import prisma from "@/lib/db";
 import { auth } from "@/modules/auth/lib/auth";
+import { getDefinitionByVersion } from "@/modules/agents/actions/publish";
 import { runWorkflowStream } from "@/modules/runtime/lib/run-workflow";
 
 export const runtime = "nodejs";
@@ -19,7 +20,13 @@ export async function POST(
   const body = await req.json();
   const message = body.message as string;
   const conversationId = body.conversationId as string | undefined;
-  const definition = body.definition;
+  const publishedVersion = body.publishedVersion as number | undefined;
+  let definition = body.definition;
+
+  if (publishedVersion) {
+    const pinned = await getDefinitionByVersion(agentId, publishedVersion);
+    if (pinned) definition = pinned;
+  }
 
   const agent = await prisma.agent.findFirst({
     where: { id: agentId, userId: session.user.id },
@@ -42,6 +49,7 @@ export async function POST(
         userId: session.user.id,
         agentId,
         title: message.slice(0, 60),
+        publishedVersion: publishedVersion ?? null,
       },
       include: { messages: true },
     });

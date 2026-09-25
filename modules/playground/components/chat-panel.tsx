@@ -47,11 +47,13 @@ function renderAssistantContent(content: string) {
 export function ChatPanel({
   agentId,
   definition,
+  publishedVersion,
   welcomeMessage,
   starterPrompts,
 }: {
   agentId: string;
   definition: unknown;
+  publishedVersion?: number;
   welcomeMessage?: string;
   starterPrompts?: string[];
 }) {
@@ -106,7 +108,7 @@ export function ChatPanel({
 
     await streamAgentRun(
       agentId,
-      { message: text, conversationId, definition },
+      { message: text, conversationId, definition, publishedVersion },
       (event) => {
         handleTraceEvent(event);
 

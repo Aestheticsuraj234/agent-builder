@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
-import { publishAgent } from "@/modules/agents/actions/publish";
+import { publishAgent, unpublishAgent } from "@/modules/agents/actions/publish";
 import { useSaveAgent } from "@/modules/agents/hooks/use-agents";
 import { AgentCanvas } from "@/modules/builder/components/agent-canvas";
 import { NodeSettingsPanel } from "@/modules/builder/components/node-settings-panel";
@@ -31,6 +31,7 @@ type AgentBuilderProps = {
     canvas: unknown;
     welcomeMessage?: string;
     starterPrompts?: unknown;
+    publishedVersionId?: string | null;
   };
 };
 
@@ -52,6 +53,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(!!agent.publishedVersionId);
 
   useEffect(() => {
     init(agent.draftDefinition, agent.canvas);
@@ -70,8 +72,41 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
 
   async function handlePublish() {
     setPublishing(true);
+    await saveAgent.mutateAsync({
+      name,
+      description,
+      draftDefinition: getDefinition(),
+      canvas: getCanvas(),
+    });
+    markClean();
     await publishAgent(agent.id);
+    setPublished(true);
     setPublishing(false);
+  }
+
+  async function handleUnpublish() {
+    await unpublishAgent(agent.id);
+    setPublished(false);
+  }
+
+  function exportGraph() {
+    const payload = { definition: getDefinition(), canvas: getCanvas() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name || "workflow"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importGraph(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const json = JSON.parse(reader.result as string);
+      init(json.definition, json.canvas);
+    };
+    reader.readAsText(file);
   }
 
   function handleSave() {
@@ -95,6 +130,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
             <h1 className="truncate font-heading text-lg font-semibold">{name}</h1>
             <p className="text-muted-foreground text-xs">
               Visual builder {isDirty ? "· unsaved changes" : "· saved"}
+              {published ? " · published" : ""}
             </p>
           </div>
         </div>
@@ -118,12 +154,41 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           <Button onClick={handleSave} disabled={saveAgent.isPending}>
             {saveAgent.isPending ? "Saving..." : "Save"}
           </Button>
-          <Button variant="outline" onClick={handlePublish} disabled={publishing}>
+          <Button variant="outline" size="sm" onClick={exportGraph}>
+            Export
+          </Button>
+          <label className="cursor-pointer">
+            <Button variant="outline" size="sm" nativeButton={false} render={<span />}>
+              Import
+            </Button>
+            <input
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && importGraph(e.target.files[0])}
+            />
+          </label>
+          <Button variant="outline" size="sm" onClick={handlePublish} disabled={publishing}>
             {publishing ? "Publishing..." : "Publish"}
           </Button>
-          <Button variant="outline" render={<Link href={`/chat/${agent.id}`} />} nativeButton={false}>
-            Open chat
+          {published && (
+            <Button variant="outline" size="sm" onClick={handleUnpublish}>
+              Unpublish
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={`/agents/${agent.id}/runs`} />}
+            nativeButton={false}
+          >
+            Runs
           </Button>
+          {published && (
+            <Button variant="outline" size="sm" render={<Link href={`/chat/${agent.id}`} />} nativeButton={false}>
+              Open chat
+            </Button>
+          )}
           <Button variant="outline" render={<Link href="/agents" />} nativeButton={false}>
             Back
           </Button>
