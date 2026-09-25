@@ -10,14 +10,20 @@ export function ToolPicker() {
   const addCustomTool = useCanvasStore((s) => s.addCustomTool);
   const toggleMemory = useCanvasStore((s) => s.toggleMemory);
   const nodes = useCanvasStore((s) => s.nodes);
+  const memoryEnabled = useCanvasStore((s) => s.memoryEnabled);
 
-  const addedToolIds = nodes.filter((n) => n.type === "tool").map((n) => n.data.toolId as string);
-  const hasMemory = nodes.some((n) => n.type === "memory");
+  const agentNode = nodes.find((n) => n.type === "agent");
+  const tools = (agentNode?.data.tools as { toolId: string }[]) ?? [];
+  const addedToolIds = tools.map((t) => t.toolId);
   const generalTools = toolsCatalog.filter((t) => !t.id.startsWith("github_"));
   const githubTools = toolsCatalog.filter((t) => t.id.startsWith("github_"));
 
   return (
     <div className="space-y-4">
+      <p className="text-muted-foreground text-xs">
+        Tools attach to the Agent node and show as badges on the canvas.
+      </p>
+
       <div>
         <h2 className="mb-2 text-sm font-medium">General tools</h2>
         <div className="space-y-1">
@@ -77,7 +83,7 @@ export function ToolPicker() {
         <h2 className="mb-2 text-sm font-medium">Memory</h2>
         <Button variant="outline" size="sm" className="w-full justify-start" onClick={toggleMemory}>
           <AppIcon name="memory" className="mr-2 size-4" />
-          {hasMemory ? "Remove memory" : "Add memory"}
+          {memoryEnabled ? "Disable memory" : "Enable memory"}
         </Button>
       </div>
     </div>

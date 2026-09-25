@@ -12,55 +12,100 @@ import {
 } from "@xyflow/react";
 import { create } from "zustand";
 import type { AgentDefinition } from "@/modules/agents/lib/definition";
-import { canvasToDefinition, definitionToCanvas } from "@/modules/builder/lib/serialize";
+import type { BuilderDefinition } from "@/modules/workflows/lib/schema";
+import {
+  canvasToAgentDefinition,
+  canvasToBuilderDefinition,
+  loadCanvasFromDraft,
+} from "@/modules/builder/lib/serialize";
 import { defaultCustomToolConfig } from "@/modules/builder/lib/custom-tool";
-import { getToolLabel } from "@/modules/builder/lib/tools-catalog";
+
+type ToolEntry = { toolId: string; config: Record<string, unknown> };
 
 type CanvasStore = {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
+  selectedToolIndex: number | null;
+  memoryEnabled: boolean;
+  limits: BuilderDefinition["limits"];
   isDirty: boolean;
-  init: (definition: AgentDefinition, canvas: any) => void;
+  init: (draftDefinition: unknown, canvas: any) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   selectNode: (nodeId: string | null) => void;
+  selectTool: (index: number | null) => void;
+  getAgentNodeId: () => string;
   addTool: (toolId: string) => void;
   addCustomTool: () => void;
+  removeTool: (index: number) => void;
+  updateTool: (index: number, config: Record<string, unknown>) => void;
   toggleMemory: () => void;
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
-  removeSelectedNode: () => void;
-  getDefinition: () => AgentDefinition;
+  getDefinition: () => BuilderDefinition;
+  getAgentDefinition: () => AgentDefinition;
   getCanvas: () => { nodes: Node[]; edges: Edge[] };
   markClean: () => void;
 };
 
+function getAgentNode(nodes: Node[]) {
+  return nodes.find((n) => n.type === "agent");
+}
+
+function updateAgentData(nodes: Node[], agentId: string, patch: Record<string, unknown>) {
+  return nodes.map((node) =>
+    node.id === agentId ? { ...node, data: { ...node.data, ...patch } } : node
+  );
+}
+
 function canConnect(connection: Connection, nodes: Node[]) {
   const source = nodes.find((n) => n.id === connection.source);
   const target = nodes.find((n) => n.id === connection.target);
-
   if (!source || !target) return false;
-  if (target.type !== "agent") return false;
-  if (source.type === "agent") return false;
 
-  return source.type === "model" || source.type === "tool" || source.type === "memory";
+  if (source.type === "start" && target.type === "agent") return true;
+  if (source.type === "agent" && target.type === "end") return true;
+
+  return false;
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
   nodes: [],
   edges: [],
   selectedNodeId: null,
+  selectedToolIndex: null,
+  memoryEnabled: false,
+  limits: { maxGraphSteps: 10, maxToolCalls: 5, timeoutMs: 60000 },
   isDirty: false,
 
-  init(definition, canvas) {
-    const { nodes, edges } = definitionToCanvas(definition, canvas);
-    set({ nodes, edges, selectedNodeId: null, isDirty: false });
+  init(draftDefinition, canvas) {
+    const { nodes, edges } = loadCanvasFromDraft(draftDefinition, canvas);
+    const builder = canvasToBuilderDefinition(nodes, edges);
+    const agentNode = getAgentNode(nodes);
+
+    set({
+      nodes: agentNode
+        ? updateAgentData(nodes, agentNode.id, { memoryEnabled: builder.memory.enabled })
+        : nodes,
+      edges,
+      selectedNodeId: null,
+      selectedToolIndex: null,
+      memoryEnabled: builder.memory.enabled,
+      limits: builder.limits,
+      isDirty: false,
+    });
   },
 
   onNodesChange(changes) {
+    const filtered = changes.filter((change) => {
+      if (change.type !== "remove") return true;
+      const node = get().nodes.find((n) => n.id === change.id);
+      return node?.type !== "start" && node?.type !== "agent" && node?.type !== "end";
+    });
+
     set({
-      nodes: applyNodeChanges(changes, get().nodes),
+      nodes: applyNodeChanges(filtered, get().nodes),
       isDirty: true,
     });
   },
@@ -76,86 +121,92 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     if (!canConnect(connection, get().nodes)) return;
 
     set({
-      edges: addEdge(connection, get().edges),
+      edges: addEdge({ ...connection, animated: true }, get().edges),
       isDirty: true,
     });
   },
 
   selectNode(nodeId) {
-    set({ selectedNodeId: nodeId });
+    set({ selectedNodeId: nodeId, selectedToolIndex: null });
+  },
+
+  selectTool(index) {
+    set({ selectedToolIndex: index });
+  },
+
+  getAgentNodeId() {
+    return getAgentNode(get().nodes)?.id ?? "agent";
   },
 
   addTool(toolId) {
-    const { nodes, edges } = get();
-    const nodeId = `tool-${toolId}`;
+    const agentNode = getAgentNode(get().nodes);
+    if (!agentNode) return;
 
-    if (nodes.some((n) => n.id === nodeId)) return;
+    const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
+    if (tools.some((t) => t.toolId === toolId)) return;
 
-    const toolCount = nodes.filter((n) => n.type === "tool").length;
-
+    const nextTools = [...tools, { toolId, config: {} }];
     set({
-      nodes: [
-        ...nodes,
-        {
-          id: nodeId,
-          type: "tool",
-          position: { x: 40, y: 120 + toolCount * 90 },
-          data: { label: getToolLabel(toolId), toolId, isCustom: false, config: {} },
-        },
-      ],
-      edges: [...edges, { id: `e-${nodeId}-agent`, source: nodeId, target: "agent" }],
+      nodes: updateAgentData(get().nodes, agentNode.id, { tools: nextTools }),
       isDirty: true,
     });
   },
 
   addCustomTool() {
-    const { nodes, edges } = get();
+    const agentNode = getAgentNode(get().nodes);
+    if (!agentNode) return;
+
     const toolId = `custom-${Date.now()}`;
-    const nodeId = `tool-${toolId}`;
     const config = defaultCustomToolConfig();
-    const toolCount = nodes.filter((n) => n.type === "tool").length;
+    const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
+    const nextTools = [...tools, { toolId, config }];
 
     set({
-      nodes: [
-        ...nodes,
-        {
-          id: nodeId,
-          type: "tool",
-          position: { x: 40, y: 120 + toolCount * 90 },
-          data: { label: config.name, toolId, isCustom: true, config },
-        },
-      ],
-      edges: [...edges, { id: `e-${nodeId}-agent`, source: nodeId, target: "agent" }],
-      selectedNodeId: nodeId,
+      nodes: updateAgentData(get().nodes, agentNode.id, { tools: nextTools }),
+      selectedNodeId: agentNode.id,
+      selectedToolIndex: nextTools.length - 1,
+      isDirty: true,
+    });
+  },
+
+  removeTool(index) {
+    const agentNode = getAgentNode(get().nodes);
+    if (!agentNode) return;
+
+    const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
+    const nextTools = tools.filter((_, i) => i !== index);
+
+    set({
+      nodes: updateAgentData(get().nodes, agentNode.id, { tools: nextTools }),
+      selectedToolIndex: null,
+      isDirty: true,
+    });
+  },
+
+  updateTool(index, config) {
+    const agentNode = getAgentNode(get().nodes);
+    if (!agentNode) return;
+
+    const tools = (agentNode.data.tools as ToolEntry[]) ?? [];
+    const nextTools = tools.map((t, i) =>
+      i === index ? { ...t, config, toolId: t.toolId } : t
+    );
+
+    set({
+      nodes: updateAgentData(get().nodes, agentNode.id, { tools: nextTools }),
       isDirty: true,
     });
   },
 
   toggleMemory() {
-    const { nodes, edges } = get();
-    const hasMemory = nodes.some((n) => n.type === "memory");
-
-    if (hasMemory) {
-      set({
-        nodes: nodes.filter((n) => n.type !== "memory"),
-        edges: edges.filter((e) => e.source !== "memory"),
-        selectedNodeId: get().selectedNodeId === "memory" ? null : get().selectedNodeId,
-        isDirty: true,
-      });
-      return;
-    }
+    const next = !get().memoryEnabled;
+    const agentNode = getAgentNode(get().nodes);
 
     set({
-      nodes: [
-        ...nodes,
-        {
-          id: "memory",
-          type: "memory",
-          position: { x: 520, y: 220 },
-          data: { label: "Memory", enabled: true },
-        },
-      ],
-      edges: [...edges, { id: "e-memory-agent", source: "memory", target: "agent" }],
+      memoryEnabled: next,
+      nodes: agentNode
+        ? updateAgentData(get().nodes, agentNode.id, { memoryEnabled: next })
+        : get().nodes,
       isDirty: true,
     });
   },
@@ -169,21 +220,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     });
   },
 
-  removeSelectedNode() {
-    const { selectedNodeId, nodes, edges } = get();
-    if (!selectedNodeId || selectedNodeId === "agent") return;
-
-    set({
-      nodes: nodes.filter((n) => n.id !== selectedNodeId),
-      edges: edges.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId),
-      selectedNodeId: null,
-      isDirty: true,
-    });
+  getDefinition() {
+    const { nodes, edges, memoryEnabled, limits } = get();
+    return canvasToBuilderDefinition(nodes, edges, { memoryEnabled, limits });
   },
 
-  getDefinition() {
-    const { nodes, edges } = get();
-    return canvasToDefinition(nodes, edges);
+  getAgentDefinition() {
+    const { nodes, edges, memoryEnabled, limits } = get();
+    return canvasToAgentDefinition(nodes, edges, { memoryEnabled, limits });
   },
 
   getCanvas() {

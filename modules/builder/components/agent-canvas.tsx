@@ -9,16 +9,14 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { AgentNode } from "@/modules/builder/components/nodes/agent-node";
-import { MemoryNode } from "@/modules/builder/components/nodes/memory-node";
-import { ModelNode } from "@/modules/builder/components/nodes/model-node";
-import { ToolNode } from "@/modules/builder/components/nodes/tool-node";
+import { EndNode } from "@/modules/builder/components/nodes/end-node";
+import { StartNode } from "@/modules/builder/components/nodes/start-node";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
 
 const nodeTypes: NodeTypes = {
+  start: StartNode,
   agent: AgentNode,
-  model: ModelNode,
-  tool: ToolNode,
-  memory: MemoryNode,
+  end: EndNode,
 };
 
 export function AgentCanvas() {

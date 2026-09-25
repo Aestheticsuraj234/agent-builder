@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
-import type { AgentDefinition } from "@/modules/agents/lib/definition";
 import { useSaveAgent } from "@/modules/agents/hooks/use-agents";
 import { AgentCanvas } from "@/modules/builder/components/agent-canvas";
 import { NodeSettingsPanel } from "@/modules/builder/components/node-settings-panel";
@@ -39,6 +38,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
   const isDirty = useCanvasStore((s) => s.isDirty);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const getDefinition = useCanvasStore((s) => s.getDefinition);
+  const getAgentDefinition = useCanvasStore((s) => s.getAgentDefinition);
   const getCanvas = useCanvasStore((s) => s.getCanvas);
   const markClean = useCanvasStore((s) => s.markClean);
 
@@ -51,7 +51,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
-    init(agent.draftDefinition as AgentDefinition, agent.canvas as any);
+    init(agent.draftDefinition, agent.canvas);
   }, [agent.id]);
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
         <DrawerContent className="max-w-sm">
           <DrawerHeader>
             <DrawerTitle>Add capabilities</DrawerTitle>
-            <DrawerDescription>Pick tools and memory for this agent.</DrawerDescription>
+            <DrawerDescription>Pick tools and memory for the Agent node.</DrawerDescription>
           </DrawerHeader>
           <div className="overflow-y-auto px-4 pb-6">
             <ToolPicker />
@@ -136,7 +136,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           <div className="min-h-0 flex-1 overflow-hidden">
             <ChatPanel
               agentId={agent.id}
-              definition={getDefinition()}
+              definition={getAgentDefinition()}
               welcomeMessage={agent.welcomeMessage}
               starterPrompts={(agent.starterPrompts as string[]) ?? []}
             />

@@ -1,25 +1,22 @@
 "use client";
 
 import type { CustomToolConfig, CustomToolParam } from "@/modules/builder/lib/custom-tool";
-import { useCanvasStore } from "@/modules/builder/store/canvas-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export function CustomToolSettings({
-  nodeId,
   config,
+  onChange,
+  onRemove,
 }: {
-  nodeId: string;
   config: CustomToolConfig;
+  onChange: (config: CustomToolConfig) => void;
+  onRemove: () => void;
 }) {
-  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const removeSelectedNode = useCanvasStore((s) => s.removeSelectedNode);
-
   function updateConfig(partial: Partial<CustomToolConfig>) {
-    const next = { ...config, ...partial };
-    updateNodeData(nodeId, { config: next, label: next.name });
+    onChange({ ...config, ...partial });
   }
 
   function updateParam(index: number, partial: Partial<CustomToolParam>) {
@@ -204,7 +201,7 @@ export function CustomToolSettings({
         ))}
       </div>
 
-      <Button variant="outline" size="sm" onClick={removeSelectedNode}>
+      <Button variant="outline" size="sm" onClick={onRemove}>
         Remove custom tool
       </Button>
     </div>
