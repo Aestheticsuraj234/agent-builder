@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Input } from "@/components/ui/input";
 import { Message, MessageContent, MessageGroup } from "@/components/ui/message";
+import { FlightCard } from "@/modules/playground/components/widgets/flight-card";
 import { Spinner } from "@/components/ui/spinner";
 
 type ChatMessage = {
@@ -16,6 +17,32 @@ type ChatMessage = {
   content: string;
   tools?: { tool: string; status: string }[];
 };
+
+function renderAssistantContent(content: string) {
+  const imageMatch = content.match(/IMAGE_URL:(https?\S+)/);
+  if (imageMatch) {
+    return (
+      <div className="space-y-2">
+        <img src={imageMatch[1]} alt="Generated" className="max-w-full rounded-lg" />
+        <p className="text-muted-foreground text-xs">{content.replace(imageMatch[0], "").trim()}</p>
+      </div>
+    );
+  }
+
+  try {
+    const jsonText = content.match(/\{[\s\S]*\}/)?.[0];
+    if (jsonText) {
+      const json = JSON.parse(jsonText);
+      if (json.widget === "flight") {
+        return <FlightCard data={json} />;
+      }
+    }
+  } catch {
+    // plain text
+  }
+
+  return content;
+}
 
 export function ChatPanel({
   agentId,
@@ -168,7 +195,11 @@ export function ChatPanel({
                 <Message key={i} align={msg.role === "user" ? "end" : "start"}>
                   <MessageContent>
                     <Bubble variant={msg.role === "user" ? "default" : "muted"}>
-                      <BubbleContent>{msg.content || (isRunning ? "..." : "")}</BubbleContent>
+                      <BubbleContent>
+                    {msg.role === "assistant"
+                      ? renderAssistantContent(msg.content || (isRunning ? "..." : ""))
+                      : msg.content || (isRunning ? "..." : "")}
+                  </BubbleContent>
                     </Bubble>
                     {msg.tools && msg.tools.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">

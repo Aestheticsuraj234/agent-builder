@@ -8,6 +8,7 @@ import { getGithubToken } from "./github/token";
 import { readWebpageTool } from "./read-webpage";
 import { weatherTool } from "./weather";
 import { getMcpTools } from "@/modules/integrations/lib/mcp-client";
+import { generateImageTool } from "./generate-image";
 import { webSearchTool } from "./web-search";
 
 const builtInTools: Record<string, StructuredTool> = {
@@ -15,6 +16,7 @@ const builtInTools: Record<string, StructuredTool> = {
   weather: weatherTool,
   web_search: webSearchTool,
   read_webpage: readWebpageTool,
+  generate_image: generateImageTool,
 };
 
 const githubToolIds = [

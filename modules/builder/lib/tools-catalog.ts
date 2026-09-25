@@ -3,6 +3,7 @@ export const toolsCatalog = [
   { id: "weather", label: "Weather", icon: "weather" },
   { id: "web_search", label: "Web Search", icon: "web_search" },
   { id: "read_webpage", label: "Read Webpage", icon: "read_webpage" },
+  { id: "generate_image", label: "Generate Image", icon: "writing" },
   { id: "github_read_file", label: "GitHub Read File", icon: "github_read_file" },
   { id: "github_search_code", label: "GitHub Search Code", icon: "github_search_code" },
   { id: "github_get_pr", label: "GitHub Get PR", icon: "github_get_pr" },
