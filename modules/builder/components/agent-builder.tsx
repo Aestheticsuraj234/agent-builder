@@ -9,6 +9,7 @@ import { AgentCanvas } from "@/modules/builder/components/agent-canvas";
 import { NodeSettingsPanel } from "@/modules/builder/components/node-settings-panel";
 import { ToolPicker } from "@/modules/builder/components/tool-picker";
 import { useCanvasStore } from "@/modules/builder/store/canvas-store";
+import { ChatPanel } from "@/modules/playground/components/chat-panel";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -28,6 +29,8 @@ type AgentBuilderProps = {
     icon: string;
     draftDefinition: unknown;
     canvas: unknown;
+    welcomeMessage?: string;
+    starterPrompts?: unknown;
   };
 };
 
@@ -45,6 +48,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
   const [description, setDescription] = useState(agent.description);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     init(agent.draftDefinition as AgentDefinition, agent.canvas as any);
@@ -93,6 +97,9 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
             Settings
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setChatOpen(true)}>
+            Test Chat
+          </Button>
           <Button onClick={handleSave} disabled={saveAgent.isPending}>
             {saveAgent.isPending ? "Saving..." : "Save"}
           </Button>
@@ -114,6 +121,25 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           </DrawerHeader>
           <div className="overflow-y-auto px-4 pb-6">
             <ToolPicker />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={chatOpen} onOpenChange={setChatOpen} swipeDirection="up">
+        <DrawerContent className="h-[70vh] max-h-[70vh]">
+          <DrawerHeader>
+            <DrawerTitle>Test chat</DrawerTitle>
+            <DrawerDescription>
+              Try your agent with the current canvas config. Save first if you changed tools.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <ChatPanel
+              agentId={agent.id}
+              definition={getDefinition()}
+              welcomeMessage={agent.welcomeMessage}
+              starterPrompts={(agent.starterPrompts as string[]) ?? []}
+            />
           </div>
         </DrawerContent>
       </Drawer>
